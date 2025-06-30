@@ -1,0 +1,7 @@
+﻿services:
+  highwaytogateway:
+    image: highwaytogateway
+    build:
+      context: .
+      dockerfile: HighWayToGateWay/Dockerfile
+
