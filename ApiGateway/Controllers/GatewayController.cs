@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
 using System.Text;
 using System.Text.Json;
+using NLog;
 
 namespace ApiGateway.Controllers;
 
@@ -12,6 +13,7 @@ public class GatewayController(IHttpClientFactory clientFactory, IOptions<MicroS
     : ControllerBase
 {
     private readonly MicroServicesOptions _services = options.Value;
+    private readonly Logger _logger = LogManager.GetCurrentClassLogger();
 
     private HttpClient Client => clientFactory.CreateClient("GatewayClient");
 
@@ -86,6 +88,7 @@ public class GatewayController(IHttpClientFactory clientFactory, IOptions<MicroS
     // ---------- Proxy Helper Methods ----------
     private async Task<IActionResult> ProxyGet(string url)
     {
+        LogRequest();
         try
         {
             var res = await Client.GetAsync(url);
@@ -94,12 +97,14 @@ public class GatewayController(IHttpClientFactory clientFactory, IOptions<MicroS
         }
         catch (Exception ex)
         {
+            _logger.Error(ex, "ProxyGet error");
             return StatusCode(503, $"Service unavailable: {ex.Message}");
         }
     }
 
     private async Task<IActionResult> ProxyPost(string url, JsonElement data)
     {
+        LogRequest();
         try
         {
             var res = await Client.PostAsync(url, new StringContent(data.ToString(), Encoding.UTF8, "application/json"));
@@ -108,12 +113,14 @@ public class GatewayController(IHttpClientFactory clientFactory, IOptions<MicroS
         }
         catch (Exception ex)
         {
+            _logger.Error(ex, "ProxyPost error");
             return StatusCode(503, $"Service unavailable: {ex.Message}");
         }
     }
 
     private async Task<IActionResult> ProxyPut(string url, JsonElement data)
     {
+        LogRequest();
         try
         {
             var res = await Client.PutAsync(url, new StringContent(data.ToString(), Encoding.UTF8, "application/json"));
@@ -122,12 +129,14 @@ public class GatewayController(IHttpClientFactory clientFactory, IOptions<MicroS
         }
         catch (Exception ex)
         {
+            _logger.Error(ex, "ProxyPut error");
             return StatusCode(503, $"Service unavailable: {ex.Message}");
         }
     }
 
     private async Task<IActionResult> ProxyDelete(string url)
     {
+        LogRequest();
         try
         {
             var res = await Client.DeleteAsync(url);
@@ -136,7 +145,15 @@ public class GatewayController(IHttpClientFactory clientFactory, IOptions<MicroS
         }
         catch (Exception ex)
         {
+            _logger.Error(ex, "ProxyDelete error");
             return StatusCode(503, $"Service unavailable: {ex.Message}");
         }
+    }
+
+    private void LogRequest()
+    {
+        var method = HttpContext.Request.Method;
+        var path = HttpContext.Request.Path;
+        _logger.Info($"API Gateway Proxy Request: {method} {path}");
     }
 }

@@ -1,10 +1,11 @@
 using EF.EF;
 using EF.Models;
 using Microsoft.EntityFrameworkCore;
+using Utility.Interface;
 
 namespace LoanMS.Repository;
 
-public class LoanRepo(GatewayContext context)
+public class LoanRepo(GatewayContext context) : IGenericRepo<Loan>
 {
     public async Task<List<Loan>> GetAllAsync()
     {

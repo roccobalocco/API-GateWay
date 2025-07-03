@@ -1,6 +1,13 @@
 using ApiGateway.Options;
 using EF.EF;
 using Polly;
+using NLog.Targets;
+using NLog.Config;
+
+var config = new LoggingConfiguration();
+var ftarget = new FileTarget();
+ftarget.FileName = "${basedir}/output.log";
+config.AddTarget("file", ftarget);
 
 var builder = WebApplication.CreateBuilder(args);
 

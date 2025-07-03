@@ -1,10 +1,11 @@
 using EF.EF;
 using EF.Models;
 using Microsoft.EntityFrameworkCore;
+using Utility.Interface;
 
 namespace RoomMS.Repository;
 
-public class RoomRepo(GatewayContext context)
+public class RoomRepo(GatewayContext context) : IGenericRepo<Room>
 {
     public async Task<List<Room>> GetAllAsync()
     {

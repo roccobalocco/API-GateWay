@@ -22,6 +22,9 @@
           <PrivateAssets>all</PrivateAssets>
           <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
         </PackageReference>
+        <PackageReference Include="NLog" Version="6.0.1" />
+        <PackageReference Include="NLog.Extensions.Logging" Version="6.0.1" />
+        <PackageReference Include="NLog.Web" Version="6.0.0" />
         <PackageReference Include="Swashbuckle.AspNetCore" Version="6.6.2"/>
     </ItemGroup>
 
@@ -33,6 +36,7 @@
 
     <ItemGroup>
       <ProjectReference Include="..\EF\EF.csproj" />
+      <ProjectReference Include="..\Utility\Utility.csproj" />
     </ItemGroup>
 
 </Project>

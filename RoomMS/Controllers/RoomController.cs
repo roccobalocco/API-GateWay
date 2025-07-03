@@ -1,37 +1,97 @@
-using Microsoft.AspNetCore.Mvc;
 using EF.Models;
+using Microsoft.AspNetCore.Mvc;
+using Utility.Interface;
+using NLog;
 
 namespace RoomMS.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-public class RoomController(IHttpClientFactory clientFactory)
+public class RoomController(IHttpClientFactory clientFactory, IGenericRepo<Room> repo)
     : ControllerBase
 {
+    private readonly Logger _logger = LogManager.GetCurrentClassLogger();
     private HttpClient Client => clientFactory.CreateClient("RoomClient");
 
-    // ROOM
+    // BOOK
     [HttpGet]
     public async Task<IActionResult> GetRooms()
     {
-        throw new NotImplementedException();
+        try
+        {
+            var method = HttpContext.Request.Method;
+            var path = HttpContext.Request.Path;
+            _logger.Info($"Request: {method} {path}");
+            
+            var result = await repo.GetAllAsync();
+
+            return Ok(result);
+        }
+        catch (Exception e)
+        {
+            _logger.Error(e, "GetRooms error");
+            return StatusCode(500, e.Message);
+        }
     }
 
     [HttpPost]
     public async Task<IActionResult> CreateRoom([FromBody] Room data)
     {
-        throw new NotImplementedException();
+        try
+        {
+            var method = HttpContext.Request.Method;
+            var path = HttpContext.Request.Path;
+            _logger.Info($"Request: {method} {path}");
+
+            var created = await repo.AddAsync(data);
+            return CreatedAtAction(nameof(GetRooms), new { id = created.Id }, created);
+        }
+        catch (Exception e)
+        {
+            _logger.Error(e, "CreateRoom error");
+            return StatusCode(500, e.Message);
+        }
     }
 
     [HttpPut("{id:int}")]
     public async Task<IActionResult> UpdateRoom(int id, [FromBody] Room data)
     {
-        throw new NotImplementedException();
+        try
+        {
+            var method = HttpContext.Request.Method;
+            var path = HttpContext.Request.Path;
+            _logger.Info($"Request: {method} {path}");
+
+            var updated = await repo.UpdateAsync(id, data);
+            if (updated == null) return NotFound();
+
+            return Ok(updated);
+        }
+        catch (Exception e)
+        {
+            _logger.Error(e, "UpdateRoom error");
+            return StatusCode(500, e.Message);
+        }
     }
 
     [HttpDelete("{id:int}")]
     public async Task<IActionResult> DeleteRoom(int id)
     {
-        throw new NotImplementedException();
+        try
+        {
+            var method = HttpContext.Request.Method;
+            var path = HttpContext.Request.Path;
+            _logger.Info($"Request: {method} {path}");
+
+            var deleted = await repo.DeleteAsync(id);
+            if (!deleted) return NotFound();
+
+            return NoContent();
+        }
+        catch (Exception e)
+        {
+            _logger.Error(e, "DeleteRoom error");
+            return StatusCode(500, e.Message);
+        }
     }
 }

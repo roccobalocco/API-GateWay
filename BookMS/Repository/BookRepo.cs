@@ -1,10 +1,11 @@
 using EF.EF;
 using EF.Models;
 using Microsoft.EntityFrameworkCore;
+using Utility.Interface;
 
 namespace BookMS.Repository;
 
-public class BookRepo(GatewayContext context)
+public class BookRepo(GatewayContext context) : IGenericRepo<Book>
 {
     public async Task<List<Book>> GetAllAsync()
     {

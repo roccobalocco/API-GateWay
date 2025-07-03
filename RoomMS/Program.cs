@@ -1,4 +1,14 @@
 using EF.EF;
+using EF.Models;
+using RoomMS.Repository;
+using Utility.Interface;
+using NLog.Targets;
+using NLog.Config;
+
+var config = new LoggingConfiguration();
+var ftarget = new FileTarget();
+ftarget.FileName = "${basedir}/output.log";
+config.AddTarget("file", ftarget);
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -11,6 +21,9 @@ builder.Services.AddSwaggerGen();
 
 builder.Services.AddEntityFrameworkSqlServer()
     .AddSqlServer<GatewayContext>(builder.Configuration.GetConnectionString("Local"));
+
+// Add repo
+builder.Services.AddSingleton<IGenericRepo<Room>, RoomRepo>();
 
 // Add fault tolerance policies
 builder.Services.AddHttpClient("RoomClient");
