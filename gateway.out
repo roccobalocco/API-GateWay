@@ -1,0 +1,131 @@
+#0 building with "default" instance using docker driver
+
+#1 [internal] load build definition from Dockerfile.gateway
+#1 transferring dockerfile: 749B done
+#1 DONE 0.0s
+
+#2 [internal] load metadata for mcr.microsoft.com/dotnet/sdk:8.0
+#2 DONE 0.1s
+
+#3 [internal] load metadata for mcr.microsoft.com/dotnet/aspnet:8.0
+#3 DONE 0.1s
+
+#4 [build 1/9] FROM mcr.microsoft.com/dotnet/sdk:8.0@sha256:57c3bf930db9ac075c9019b83fdfc77c474b11b874120b84bc97fa65f33662dd
+#4 DONE 0.0s
+
+#5 [base 1/2] FROM mcr.microsoft.com/dotnet/aspnet:8.0@sha256:68669af44214899b4a5ff5fa0dd5fc10e7e9d665669a44dcbc1a142a99b2ec5b
+#5 DONE 0.0s
+
+#6 [build 2/9] WORKDIR /src
+#6 CACHED
+
+#7 [internal] load .dockerignore
+#7 transferring context: 380B done
+#7 DONE 0.0s
+
+#8 [internal] load build context
+#8 transferring context: 4.36kB done
+#8 DONE 0.0s
+
+#9 [build 5/9] COPY [Utility/Utility.csproj, Utility/]
+#9 CACHED
+
+#10 [build 4/9] COPY [EF/EF.csproj, EF/]
+#10 CACHED
+
+#11 [build 3/9] COPY [ApiGateway/ApiGateway.csproj, ApiGateway/]
+#11 CACHED
+
+#12 [build 6/9] RUN dotnet restore "ApiGateway/ApiGateway.csproj"
+#12 CACHED
+
+#13 [build 7/9] COPY . .
+#13 DONE 0.1s
+
+#14 [build 8/9] WORKDIR /src/ApiGateway
+#14 DONE 0.0s
+
+#15 [build 9/9] RUN dotnet build "ApiGateway.csproj" -c Release -o /app/build
+#15 2.690   Determining projects to restore...
+#15 4.884 /src/ApiGateway/ApiGateway.csproj : warning NU1701: Package 'NLog.Web 6.0.0' was restored using '.NETFramework,Version=v4.6.1, .NETFramework,Version=v4.6.2, .NETFramework,Version=v4.7, .NETFramework,Version=v4.7.1, .NETFramework,Version=v4.7.2, .NETFramework,Version=v4.8, .NETFramework,Version=v4.8.1' instead of the project target framework 'net8.0'. This package may not be fully compatible with your project.
+#15 4.893 /src/EF/EF.csproj : warning NU1701: Package 'NLog.Web 6.0.0' was restored using '.NETFramework,Version=v4.6.1, .NETFramework,Version=v4.6.2, .NETFramework,Version=v4.7, .NETFramework,Version=v4.7.1, .NETFramework,Version=v4.7.2, .NETFramework,Version=v4.8, .NETFramework,Version=v4.8.1' instead of the project target framework 'net8.0'. This package may not be fully compatible with your project. [/src/ApiGateway/ApiGateway.csproj]
+#15 4.896   All projects are up-to-date for restore.
+#15 5.471 /src/ApiGateway/ApiGateway.csproj : warning NU1701: Package 'NLog.Web 6.0.0' was restored using '.NETFramework,Version=v4.6.1, .NETFramework,Version=v4.6.2, .NETFramework,Version=v4.7, .NETFramework,Version=v4.7.1, .NETFramework,Version=v4.7.2, .NETFramework,Version=v4.8, .NETFramework,Version=v4.8.1' instead of the project target framework 'net8.0'. This package may not be fully compatible with your project.
+#15 5.752 /src/EF/EF.csproj : warning NU1701: Package 'NLog.Web 6.0.0' was restored using '.NETFramework,Version=v4.6.1, .NETFramework,Version=v4.6.2, .NETFramework,Version=v4.7, .NETFramework,Version=v4.7.1, .NETFramework,Version=v4.7.2, .NETFramework,Version=v4.8, .NETFramework,Version=v4.8.1' instead of the project target framework 'net8.0'. This package may not be fully compatible with your project.
+#15 9.690 /src/EF/Models/Loan.cs(10,19): warning CS8618: Non-nullable property 'Status' must contain a non-null value when exiting constructor. Consider adding the 'required' modifier or declaring the property as nullable. [/src/EF/EF.csproj]
+#15 9.691 /src/EF/Models/Loan.cs(11,19): warning CS8618: Non-nullable property 'Comments' must contain a non-null value when exiting constructor. Consider adding the 'required' modifier or declaring the property as nullable. [/src/EF/EF.csproj]
+#15 9.691 /src/EF/Models/Loan.cs(12,17): warning CS8618: Non-nullable property 'User' must contain a non-null value when exiting constructor. Consider adding the 'required' modifier or declaring the property as nullable. [/src/EF/EF.csproj]
+#15 9.691 /src/EF/Models/Loan.cs(13,17): warning CS8618: Non-nullable property 'Book' must contain a non-null value when exiting constructor. Consider adding the 'required' modifier or declaring the property as nullable. [/src/EF/EF.csproj]
+#15 9.691 /src/EF/Models/User.cs(6,19): warning CS8618: Non-nullable property 'Name' must contain a non-null value when exiting constructor. Consider adding the 'required' modifier or declaring the property as nullable. [/src/EF/EF.csproj]
+#15 9.691 /src/EF/Models/User.cs(7,19): warning CS8618: Non-nullable property 'Email' must contain a non-null value when exiting constructor. Consider adding the 'required' modifier or declaring the property as nullable. [/src/EF/EF.csproj]
+#15 9.691 /src/EF/Models/Book.cs(6,19): warning CS8618: Non-nullable property 'Name' must contain a non-null value when exiting constructor. Consider adding the 'required' modifier or declaring the property as nullable. [/src/EF/EF.csproj]
+#15 9.691 /src/EF/Models/Book.cs(7,19): warning CS8618: Non-nullable property 'Author' must contain a non-null value when exiting constructor. Consider adding the 'required' modifier or declaring the property as nullable. [/src/EF/EF.csproj]
+#15 9.691 /src/EF/Models/Book.cs(8,19): warning CS8618: Non-nullable property 'Publisher' must contain a non-null value when exiting constructor. Consider adding the 'required' modifier or declaring the property as nullable. [/src/EF/EF.csproj]
+#15 9.691 /src/EF/Models/Book.cs(10,17): warning CS8618: Non-nullable property 'Room' must contain a non-null value when exiting constructor. Consider adding the 'required' modifier or declaring the property as nullable. [/src/EF/EF.csproj]
+#15 9.691 /src/EF/Models/Room.cs(6,19): warning CS8618: Non-nullable property 'Name' must contain a non-null value when exiting constructor. Consider adding the 'required' modifier or declaring the property as nullable. [/src/EF/EF.csproj]
+#15 9.691 /src/EF/Models/Room.cs(7,19): warning CS8618: Non-nullable property 'Description' must contain a non-null value when exiting constructor. Consider adding the 'required' modifier or declaring the property as nullable. [/src/EF/EF.csproj]
+#15 9.869   EF -> /app/build/EF.dll
+#15 12.01 /src/ApiGateway/Options/MicroServicesOptions.cs(5,19): warning CS8618: Non-nullable property 'Room' must contain a non-null value when exiting constructor. Consider adding the 'required' modifier or declaring the property as nullable. [/src/ApiGateway/ApiGateway.csproj]
+#15 12.01 /src/ApiGateway/Options/MicroServicesOptions.cs(6,19): warning CS8618: Non-nullable property 'User' must contain a non-null value when exiting constructor. Consider adding the 'required' modifier or declaring the property as nullable. [/src/ApiGateway/ApiGateway.csproj]
+#15 12.01 /src/ApiGateway/Options/MicroServicesOptions.cs(7,19): warning CS8618: Non-nullable property 'Loan' must contain a non-null value when exiting constructor. Consider adding the 'required' modifier or declaring the property as nullable. [/src/ApiGateway/ApiGateway.csproj]
+#15 12.01 /src/ApiGateway/Options/MicroServicesOptions.cs(8,19): warning CS8618: Non-nullable property 'Book' must contain a non-null value when exiting constructor. Consider adding the 'required' modifier or declaring the property as nullable. [/src/ApiGateway/ApiGateway.csproj]
+#15 12.19   ApiGateway -> /app/build/ApiGateway.dll
+#15 12.21 
+#15 12.21 Build succeeded.
+#15 12.21 
+#15 12.21 /src/ApiGateway/ApiGateway.csproj : warning NU1701: Package 'NLog.Web 6.0.0' was restored using '.NETFramework,Version=v4.6.1, .NETFramework,Version=v4.6.2, .NETFramework,Version=v4.7, .NETFramework,Version=v4.7.1, .NETFramework,Version=v4.7.2, .NETFramework,Version=v4.8, .NETFramework,Version=v4.8.1' instead of the project target framework 'net8.0'. This package may not be fully compatible with your project.
+#15 12.21 /src/EF/EF.csproj : warning NU1701: Package 'NLog.Web 6.0.0' was restored using '.NETFramework,Version=v4.6.1, .NETFramework,Version=v4.6.2, .NETFramework,Version=v4.7, .NETFramework,Version=v4.7.1, .NETFramework,Version=v4.7.2, .NETFramework,Version=v4.8, .NETFramework,Version=v4.8.1' instead of the project target framework 'net8.0'. This package may not be fully compatible with your project. [/src/ApiGateway/ApiGateway.csproj]
+#15 12.21 /src/ApiGateway/ApiGateway.csproj : warning NU1701: Package 'NLog.Web 6.0.0' was restored using '.NETFramework,Version=v4.6.1, .NETFramework,Version=v4.6.2, .NETFramework,Version=v4.7, .NETFramework,Version=v4.7.1, .NETFramework,Version=v4.7.2, .NETFramework,Version=v4.8, .NETFramework,Version=v4.8.1' instead of the project target framework 'net8.0'. This package may not be fully compatible with your project.
+#15 12.21 /src/EF/EF.csproj : warning NU1701: Package 'NLog.Web 6.0.0' was restored using '.NETFramework,Version=v4.6.1, .NETFramework,Version=v4.6.2, .NETFramework,Version=v4.7, .NETFramework,Version=v4.7.1, .NETFramework,Version=v4.7.2, .NETFramework,Version=v4.8, .NETFramework,Version=v4.8.1' instead of the project target framework 'net8.0'. This package may not be fully compatible with your project.
+#15 12.21 /src/EF/Models/Loan.cs(10,19): warning CS8618: Non-nullable property 'Status' must contain a non-null value when exiting constructor. Consider adding the 'required' modifier or declaring the property as nullable. [/src/EF/EF.csproj]
+#15 12.21 /src/EF/Models/Loan.cs(11,19): warning CS8618: Non-nullable property 'Comments' must contain a non-null value when exiting constructor. Consider adding the 'required' modifier or declaring the property as nullable. [/src/EF/EF.csproj]
+#15 12.21 /src/EF/Models/Loan.cs(12,17): warning CS8618: Non-nullable property 'User' must contain a non-null value when exiting constructor. Consider adding the 'required' modifier or declaring the property as nullable. [/src/EF/EF.csproj]
+#15 12.22 /src/EF/Models/Loan.cs(13,17): warning CS8618: Non-nullable property 'Book' must contain a non-null value when exiting constructor. Consider adding the 'required' modifier or declaring the property as nullable. [/src/EF/EF.csproj]
+#15 12.22 /src/EF/Models/User.cs(6,19): warning CS8618: Non-nullable property 'Name' must contain a non-null value when exiting constructor. Consider adding the 'required' modifier or declaring the property as nullable. [/src/EF/EF.csproj]
+#15 12.22 /src/EF/Models/User.cs(7,19): warning CS8618: Non-nullable property 'Email' must contain a non-null value when exiting constructor. Consider adding the 'required' modifier or declaring the property as nullable. [/src/EF/EF.csproj]
+#15 12.22 /src/EF/Models/Book.cs(6,19): warning CS8618: Non-nullable property 'Name' must contain a non-null value when exiting constructor. Consider adding the 'required' modifier or declaring the property as nullable. [/src/EF/EF.csproj]
+#15 12.22 /src/EF/Models/Book.cs(7,19): warning CS8618: Non-nullable property 'Author' must contain a non-null value when exiting constructor. Consider adding the 'required' modifier or declaring the property as nullable. [/src/EF/EF.csproj]
+#15 12.22 /src/EF/Models/Book.cs(8,19): warning CS8618: Non-nullable property 'Publisher' must contain a non-null value when exiting constructor. Consider adding the 'required' modifier or declaring the property as nullable. [/src/EF/EF.csproj]
+#15 12.22 /src/EF/Models/Book.cs(10,17): warning CS8618: Non-nullable property 'Room' must contain a non-null value when exiting constructor. Consider adding the 'required' modifier or declaring the property as nullable. [/src/EF/EF.csproj]
+#15 12.22 /src/EF/Models/Room.cs(6,19): warning CS8618: Non-nullable property 'Name' must contain a non-null value when exiting constructor. Consider adding the 'required' modifier or declaring the property as nullable. [/src/EF/EF.csproj]
+#15 12.22 /src/EF/Models/Room.cs(7,19): warning CS8618: Non-nullable property 'Description' must contain a non-null value when exiting constructor. Consider adding the 'required' modifier or declaring the property as nullable. [/src/EF/EF.csproj]
+#15 12.22 /src/ApiGateway/Options/MicroServicesOptions.cs(5,19): warning CS8618: Non-nullable property 'Room' must contain a non-null value when exiting constructor. Consider adding the 'required' modifier or declaring the property as nullable. [/src/ApiGateway/ApiGateway.csproj]
+#15 12.22 /src/ApiGateway/Options/MicroServicesOptions.cs(6,19): warning CS8618: Non-nullable property 'User' must contain a non-null value when exiting constructor. Consider adding the 'required' modifier or declaring the property as nullable. [/src/ApiGateway/ApiGateway.csproj]
+#15 12.22 /src/ApiGateway/Options/MicroServicesOptions.cs(7,19): warning CS8618: Non-nullable property 'Loan' must contain a non-null value when exiting constructor. Consider adding the 'required' modifier or declaring the property as nullable. [/src/ApiGateway/ApiGateway.csproj]
+#15 12.22 /src/ApiGateway/Options/MicroServicesOptions.cs(8,19): warning CS8618: Non-nullable property 'Book' must contain a non-null value when exiting constructor. Consider adding the 'required' modifier or declaring the property as nullable. [/src/ApiGateway/ApiGateway.csproj]
+#15 12.22     20 Warning(s)
+#15 12.22     0 Error(s)
+#15 12.23 
+#15 12.23 Time Elapsed 00:00:10.95
+#15 DONE 12.4s
+
+#16 [publish 1/1] RUN dotnet publish "ApiGateway.csproj" -c Release -o /app/publish /p:UseAppHost=false
+#16 1.925   Determining projects to restore...
+#16 2.795 /src/EF/EF.csproj : warning NU1701: Package 'NLog.Web 6.0.0' was restored using '.NETFramework,Version=v4.6.1, .NETFramework,Version=v4.6.2, .NETFramework,Version=v4.7, .NETFramework,Version=v4.7.1, .NETFramework,Version=v4.7.2, .NETFramework,Version=v4.8, .NETFramework,Version=v4.8.1' instead of the project target framework 'net8.0'. This package may not be fully compatible with your project. [/src/ApiGateway/ApiGateway.csproj]
+#16 2.803 /src/ApiGateway/ApiGateway.csproj : warning NU1701: Package 'NLog.Web 6.0.0' was restored using '.NETFramework,Version=v4.6.1, .NETFramework,Version=v4.6.2, .NETFramework,Version=v4.7, .NETFramework,Version=v4.7.1, .NETFramework,Version=v4.7.2, .NETFramework,Version=v4.8, .NETFramework,Version=v4.8.1' instead of the project target framework 'net8.0'. This package may not be fully compatible with your project.
+#16 2.809   All projects are up-to-date for restore.
+#16 3.008 /src/ApiGateway/ApiGateway.csproj : warning NU1701: Package 'NLog.Web 6.0.0' was restored using '.NETFramework,Version=v4.6.1, .NETFramework,Version=v4.6.2, .NETFramework,Version=v4.7, .NETFramework,Version=v4.7.1, .NETFramework,Version=v4.7.2, .NETFramework,Version=v4.8, .NETFramework,Version=v4.8.1' instead of the project target framework 'net8.0'. This package may not be fully compatible with your project.
+#16 3.230 /src/EF/EF.csproj : warning NU1701: Package 'NLog.Web 6.0.0' was restored using '.NETFramework,Version=v4.6.1, .NETFramework,Version=v4.6.2, .NETFramework,Version=v4.7, .NETFramework,Version=v4.7.1, .NETFramework,Version=v4.7.2, .NETFramework,Version=v4.8, .NETFramework,Version=v4.8.1' instead of the project target framework 'net8.0'. This package may not be fully compatible with your project.
+#16 3.902   EF -> /src/EF/bin/Release/net8.0/EF.dll
+#16 8.056 /src/ApiGateway/Options/MicroServicesOptions.cs(5,19): warning CS8618: Non-nullable property 'Room' must contain a non-null value when exiting constructor. Consider adding the 'required' modifier or declaring the property as nullable. [/src/ApiGateway/ApiGateway.csproj]
+#16 8.056 /src/ApiGateway/Options/MicroServicesOptions.cs(6,19): warning CS8618: Non-nullable property 'User' must contain a non-null value when exiting constructor. Consider adding the 'required' modifier or declaring the property as nullable. [/src/ApiGateway/ApiGateway.csproj]
+#16 8.056 /src/ApiGateway/Options/MicroServicesOptions.cs(7,19): warning CS8618: Non-nullable property 'Loan' must contain a non-null value when exiting constructor. Consider adding the 'required' modifier or declaring the property as nullable. [/src/ApiGateway/ApiGateway.csproj]
+#16 8.056 /src/ApiGateway/Options/MicroServicesOptions.cs(8,19): warning CS8618: Non-nullable property 'Book' must contain a non-null value when exiting constructor. Consider adding the 'required' modifier or declaring the property as nullable. [/src/ApiGateway/ApiGateway.csproj]
+#16 8.324   ApiGateway -> /src/ApiGateway/bin/Release/net8.0/ApiGateway.dll
+#16 8.647   ApiGateway -> /app/publish/
+#16 DONE 8.8s
+
+#17 [final 1/2] WORKDIR /app
+#17 CACHED
+
+#18 [base 2/2] WORKDIR /app
+#18 CACHED
+
+#19 [final 2/2] COPY --from=publish /app/publish .
+#19 CACHED
+
+#20 exporting to image
+#20 exporting layers done
+#20 writing image sha256:82b5a72ad63f3494ca0f3cb4397431bdc0baa137ab96f0c3cd5feb718c9f53c8 done
+#20 naming to docker.io/library/api-gateway done
+#20 DONE 0.0s
