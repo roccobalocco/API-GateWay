@@ -47,7 +47,7 @@ public class GatewayController(IHttpClientFactory clientFactory, IOptions<MicroS
     public async Task<IActionResult> UpdateBook(int id, [FromBody] JsonElement data) =>
         await ProxyPut($"{_services.Book}/books/{id}", data);
 
-    [HttpDelete("books/{id}")]
+    [HttpDelete("books/{id:int}")]
     public async Task<IActionResult> DeleteBook(int id) =>
         await ProxyDelete($"{_services.Book}/books/{id}");
 
@@ -60,11 +60,11 @@ public class GatewayController(IHttpClientFactory clientFactory, IOptions<MicroS
     public async Task<IActionResult> CreateLoan([FromBody] JsonElement data) =>
         await ProxyPost($"{_services.Loan}/loans", data);
 
-    [HttpPut("loans/{id}")]
+    [HttpPut("loans/{id:int}")]
     public async Task<IActionResult> UpdateLoan(int id, [FromBody] JsonElement data) =>
         await ProxyPut($"{_services.Loan}/loans/{id}", data);
 
-    [HttpDelete("loans/{id}")]
+    [HttpDelete("loans/{id:int}")]
     public async Task<IActionResult> DeleteLoan(int id) =>
         await ProxyDelete($"{_services.Loan}/loans/{id}");
 
@@ -77,11 +77,11 @@ public class GatewayController(IHttpClientFactory clientFactory, IOptions<MicroS
     public async Task<IActionResult> CreateUser([FromBody] JsonElement data) =>
         await ProxyPost($"{_services.User}/users", data);
 
-    [HttpPut("users/{id}")]
+    [HttpPut("users/{id:int}")]
     public async Task<IActionResult> UpdateUser(int id, [FromBody] JsonElement data) =>
         await ProxyPut($"{_services.User}/users/{id}", data);
 
-    [HttpDelete("users/{id}")]
+    [HttpDelete("users/{id:int}")]
     public async Task<IActionResult> DeleteUser(int id) =>
         await ProxyDelete($"{_services.User}/users/{id}");
 
