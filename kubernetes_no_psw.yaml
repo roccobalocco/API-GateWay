@@ -13,6 +13,7 @@ metadata:
 type: Opaque
 stringData:
   DefaultConnection: "Server=mssql;Database=Gateway;User=sa;Password=<password>"
+  Local: "Server=mssql;Database=Gateway;User=sa;Password=<password>"
 
 ---
 
@@ -105,7 +106,7 @@ spec:
             limits:
               cpu: 500m
           env:
-            - name: ConnectionStrings__DefaultConnection
+            - name: ConnectionStrings__Local
               valueFrom:
                 secretKeyRef:
                   name: db-connection
@@ -175,7 +176,7 @@ spec:
             limits:
               cpu: 500m
           env:
-            - name: ConnectionStrings__DefaultConnection
+            - name: ConnectionStrings__Local
               valueFrom:
                 secretKeyRef:
                   name: db-connection
@@ -245,7 +246,7 @@ spec:
             limits:
               cpu: 500m
           env:
-            - name: ConnectionStrings__DefaultConnection
+            - name: ConnectionStrings__Local
               valueFrom:
                 secretKeyRef:
                   name: db-connection
@@ -315,7 +316,7 @@ spec:
             limits:
               cpu: 500m
           env:
-            - name: ConnectionStrings__DefaultConnection
+            - name: ConnectionStrings__Local
               valueFrom:
                 secretKeyRef:
                   name: db-connection

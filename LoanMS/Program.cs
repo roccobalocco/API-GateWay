@@ -4,6 +4,7 @@ using LoanMS.Repository;
 using Utility.Interface;
 using NLog.Targets;
 using NLog.Config;
+using Microsoft.EntityFrameworkCore;
 
 var config = new LoggingConfiguration();
 var ftarget = new FileTarget();
@@ -13,24 +14,26 @@ config.AddTarget("file", ftarget);
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
-
 builder.Services.AddControllers();
-// Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
 builder.Services.AddEntityFrameworkSqlServer()
     .AddSqlServer<GatewayContext>(builder.Configuration.GetConnectionString("Local"));
 
-// Add repo
 builder.Services.AddScoped<IGenericRepo<Loan>, LoanRepo>();
 
-// Add fault tolerance policies
 builder.Services.AddHttpClient("LoanClient");
 
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
+// ➕ Migration
+using (var scope = app.Services.CreateScope())
+{
+    var db = scope.ServiceProvider.GetRequiredService<GatewayContext>();
+    db.Database.Migrate();
+}
+
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
@@ -40,7 +43,6 @@ if (app.Environment.IsDevelopment())
 app.UseHttpsRedirection();
 
 app.UseAuthorization();
-
 
 app.MapControllers();
 

@@ -3,6 +3,7 @@ using EF.EF;
 using Polly;
 using NLog.Targets;
 using NLog.Config;
+using Microsoft.EntityFrameworkCore;
 
 var config = new LoggingConfiguration();
 var ftarget = new FileTarget();
@@ -18,7 +19,6 @@ builder.Services.AddControllers();
 builder.Services.Configure<MicroServicesOptions>(
     builder.Configuration.GetSection(nameof(MicroServicesOptions)));
 
-// Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 builder.Services.AddEntityFrameworkSqlServer()
@@ -30,16 +30,21 @@ builder.Services.AddHttpClient("GatewayClient")
     {
         options.Retry.MaxRetryAttempts = 3;
         options.Retry.BackoffType = DelayBackoffType.Exponential;
-        options.CircuitBreaker.FailureRatio = 0.5; // 50% failure rate
+        options.CircuitBreaker.FailureRatio = 0.5;
         options.CircuitBreaker.SamplingDuration = TimeSpan.FromSeconds(30);
         options.CircuitBreaker.MinimumThroughput = 4;
         options.CircuitBreaker.BreakDuration = TimeSpan.FromSeconds(15);
-        // puoi configurare anche timeout, hedging, ecc.
     });
 
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
+// ➕ Migration
+using (var scope = app.Services.CreateScope())
+{
+    var db = scope.ServiceProvider.GetRequiredService<GatewayContext>();
+    db.Database.Migrate();
+}
+
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();

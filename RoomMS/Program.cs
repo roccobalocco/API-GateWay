@@ -1,5 +1,6 @@
 using EF.EF;
 using EF.Models;
+using Microsoft.EntityFrameworkCore;
 using RoomMS.Repository;
 using Utility.Interface;
 using NLog.Targets;
@@ -29,6 +30,13 @@ builder.Services.AddScoped<IGenericRepo<Room>, RoomRepo>();
 builder.Services.AddHttpClient("RoomClient");
 
 var app = builder.Build();
+
+// ➕ Migration
+using (var scope = app.Services.CreateScope())
+{
+    var db = scope.ServiceProvider.GetRequiredService<GatewayContext>();
+    db.Database.Migrate();
+}
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())

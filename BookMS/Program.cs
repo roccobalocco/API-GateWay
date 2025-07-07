@@ -1,6 +1,7 @@
 using BookMS.Repository;
 using EF.EF;
 using EF.Models;
+using Microsoft.EntityFrameworkCore;
 using Utility.Interface;
 using NLog.Targets;
 using NLog.Config;
@@ -29,6 +30,13 @@ builder.Services.AddScoped<IGenericRepo<Book>, BookRepo>();
 builder.Services.AddHttpClient("BookClient");
 
 var app = builder.Build();
+
+// ➕ Migration
+using (var scope = app.Services.CreateScope())
+{
+    var db = scope.ServiceProvider.GetRequiredService<GatewayContext>();
+    db.Database.Migrate();
+}
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
