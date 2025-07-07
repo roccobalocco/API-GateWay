@@ -14,6 +14,10 @@ var builder = WebApplication.CreateBuilder(args);
 // Add services to the container.
 builder.Services.AddControllers();
 
+// options
+builder.Services.Configure<MicroServicesOptions>(
+    builder.Configuration.GetSection(nameof(MicroServicesOptions)));
+
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
@@ -32,10 +36,6 @@ builder.Services.AddHttpClient("GatewayClient")
         options.CircuitBreaker.BreakDuration = TimeSpan.FromSeconds(15);
         // puoi configurare anche timeout, hedging, ecc.
     });
-
-// Add optionsbuilder.Services.Configure<MicroServicesOptions>(
-builder.Configuration.GetSection(nameof(MicroServicesOptions));
-
 
 var app = builder.Build();
 

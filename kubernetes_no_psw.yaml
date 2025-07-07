@@ -8,11 +8,11 @@ metadata:
 apiVersion: v1
 kind: Secret
 metadata:
-  name: mssql-secret
+  name: db-connection
   namespace: cloudmare
 type: Opaque
 stringData:
-  SA_PASSWORD: "sa_sa_prova"
+  DefaultConnection: "Server=mssql;Database=Gateway;User=sa;Password=<password>"
 
 ---
 
@@ -54,10 +54,7 @@ spec:
             - name: ACCEPT_EULA
               value: "Y"
             - name: SA_PASSWORD
-              valueFrom:
-                secretKeyRef:
-                  name: mssql-secret
-                  key: SA_PASSWORD
+              value: "<password>"
           volumeMounts:
             - name: mssql-storage
               mountPath: /var/opt/mssql
@@ -82,7 +79,7 @@ spec:
 
 ---
 
-# Template per microservizio (ripetere per BookMS, RoomMS, etc.)
+# Microservice: bookms
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -100,12 +97,15 @@ spec:
     spec:
       containers:
         - name: bookms
-          image: roccobalocco/cloudmare-bookms:latest
+          image: roccobalocco/book:latest
           ports:
             - containerPort: 80
           env:
             - name: ConnectionStrings__DefaultConnection
-              value: "Server=mssql;Database=BookDb;User=sa;Password=sa_sa_prova"
+              valueFrom:
+                secretKeyRef:
+                  name: db-connection
+                  key: DefaultConnection
 
 ---
 
@@ -122,7 +122,136 @@ spec:
 
 ---
 
-# Api Gateway
+# Microservice: userms
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: userms
+  namespace: cloudmare
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: userms
+  template:
+    metadata:
+      labels:
+        app: userms
+    spec:
+      containers:
+        - name: userms
+          image: roccobalocco/user:latest
+          ports:
+            - containerPort: 80
+          env:
+            - name: ConnectionStrings__DefaultConnection
+              valueFrom:
+                secretKeyRef:
+                  name: db-connection
+                  key: DefaultConnection
+
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: userms
+  namespace: cloudmare
+spec:
+  ports:
+    - port: 81
+  selector:
+    app: userms
+
+---
+
+# Microservice: loanms
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: loanms
+  namespace: cloudmare
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: loanms
+  template:
+    metadata:
+      labels:
+        app: loanms
+    spec:
+      containers:
+        - name: loanms
+          image: roccobalocco/loan:latest
+          ports:
+            - containerPort: 80
+          env:
+            - name: ConnectionStrings__DefaultConnection
+              valueFrom:
+                secretKeyRef:
+                  name: db-connection
+                  key: DefaultConnection
+
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: loanms
+  namespace: cloudmare
+spec:
+  ports:
+    - port: 82
+  selector:
+    app: loanms
+
+---
+
+# Microservice: roomms
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: roomms
+  namespace: cloudmare
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: roomms
+  template:
+    metadata:
+      labels:
+        app: roomms
+    spec:
+      containers:
+        - name: roomms
+          image: roccobalocco/room:latest
+          ports:
+            - containerPort: 80
+          env:
+            - name: ConnectionStrings__DefaultConnection
+              valueFrom:
+                secretKeyRef:
+                  name: db-connection
+                  key: DefaultConnection
+
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: roomms
+  namespace: cloudmare
+spec:
+  ports:
+    - port: 83
+  selector:
+    app: roomms
+
+---
+
+# API Gateway
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -140,9 +269,23 @@ spec:
     spec:
       containers:
         - name: apigateway
-          image: roccobalocco/cloudmare-apigateway:latest
+          image: roccobalocco/api-gateway:latest
           ports:
             - containerPort: 80
+          env:
+            - name: ConnectionStrings__Local
+              valueFrom:
+                secretKeyRef:
+                  name: db-connection
+                  key: DefaultConnection
+            - name: MicroServicesOptions__Book
+              value: "http://bookms:80"
+            - name: MicroServicesOptions__User
+              value: "http://userms:81"
+            - name: MicroServicesOptions__Loan
+              value: "http://loanms:82"
+            - name: MicroServicesOptions__Room
+              value: "http://roomms:83"
 
 ---
 
@@ -152,8 +295,7 @@ metadata:
   name: apigateway
   namespace: cloudmare
 spec:
-  type: LoadBalancer
   ports:
-    - port: 80
+    - port: 84
   selector:
     app: apigateway
