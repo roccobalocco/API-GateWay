@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
 using System.Text;
 using System.Text.Json;
+using EF.Models;
 using NLog;
 
 namespace ApiGateway.Controllers;
@@ -23,11 +24,11 @@ public class GatewayController(IHttpClientFactory clientFactory, IOptions<MicroS
         await ProxyGet($"{_services.Room}/rooms");
 
     [HttpPost("rooms")]
-    public async Task<IActionResult> CreateRoom([FromBody] JsonElement data) =>
+    public async Task<IActionResult> CreateRoom([FromBody] Room data) =>
         await ProxyPost($"{_services.Room}/rooms", data);
 
     [HttpPut("rooms/{id}")]
-    public async Task<IActionResult> UpdateRoom(int id, [FromBody] JsonElement data) =>
+    public async Task<IActionResult> UpdateRoom(int id, [FromBody] Room data) =>
         await ProxyPut($"{_services.Room}/rooms/{id}", data);
 
     [HttpDelete("rooms/{id}")]
@@ -40,11 +41,11 @@ public class GatewayController(IHttpClientFactory clientFactory, IOptions<MicroS
         await ProxyGet($"{_services.Book}/books");
 
     [HttpPost("books")]
-    public async Task<IActionResult> CreateBook([FromBody] JsonElement data) =>
+    public async Task<IActionResult> CreateBook([FromBody] Book data) =>
         await ProxyPost($"{_services.Book}/books", data);
 
     [HttpPut("books/{id}")]
-    public async Task<IActionResult> UpdateBook(int id, [FromBody] JsonElement data) =>
+    public async Task<IActionResult> UpdateBook(int id, [FromBody] Book data) =>
         await ProxyPut($"{_services.Book}/books/{id}", data);
 
     [HttpDelete("books/{id:int}")]
@@ -57,11 +58,11 @@ public class GatewayController(IHttpClientFactory clientFactory, IOptions<MicroS
         await ProxyGet($"{_services.Loan}/loans");
 
     [HttpPost("loans")]
-    public async Task<IActionResult> CreateLoan([FromBody] JsonElement data) =>
+    public async Task<IActionResult> CreateLoan([FromBody] Loan data) =>
         await ProxyPost($"{_services.Loan}/loans", data);
 
     [HttpPut("loans/{id:int}")]
-    public async Task<IActionResult> UpdateLoan(int id, [FromBody] JsonElement data) =>
+    public async Task<IActionResult> UpdateLoan(int id, [FromBody] Loan data) =>
         await ProxyPut($"{_services.Loan}/loans/{id}", data);
 
     [HttpDelete("loans/{id:int}")]
@@ -74,11 +75,11 @@ public class GatewayController(IHttpClientFactory clientFactory, IOptions<MicroS
         await ProxyGet($"{_services.User}/users");
 
     [HttpPost("users")]
-    public async Task<IActionResult> CreateUser([FromBody] JsonElement data) =>
+    public async Task<IActionResult> CreateUser([FromBody] User data) =>
         await ProxyPost($"{_services.User}/users", data);
 
     [HttpPut("users/{id:int}")]
-    public async Task<IActionResult> UpdateUser(int id, [FromBody] JsonElement data) =>
+    public async Task<IActionResult> UpdateUser(int id, [FromBody] User data) =>
         await ProxyPut($"{_services.User}/users/{id}", data);
 
     [HttpDelete("users/{id:int}")]
@@ -102,12 +103,14 @@ public class GatewayController(IHttpClientFactory clientFactory, IOptions<MicroS
         }
     }
 
-    private async Task<IActionResult> ProxyPost(string url, JsonElement data)
+    private async Task<IActionResult> ProxyPost<T>(string url, T data)
     {
         LogRequest();
         try
         {
-            var res = await Client.PostAsync(url, new StringContent(data.ToString(), Encoding.UTF8, "application/json"));
+            var res = await Client.PostAsync(url,
+                new StringContent(data?.ToString() ?? throw new InvalidOperationException(), Encoding.UTF8,
+                    "application/json"));
             var content = await res.Content.ReadAsStringAsync();
             return StatusCode((int)res.StatusCode, content);
         }
@@ -118,12 +121,14 @@ public class GatewayController(IHttpClientFactory clientFactory, IOptions<MicroS
         }
     }
 
-    private async Task<IActionResult> ProxyPut(string url, JsonElement data)
+    private async Task<IActionResult> ProxyPut<T>(string url, T data)
     {
         LogRequest();
         try
         {
-            var res = await Client.PutAsync(url, new StringContent(data.ToString(), Encoding.UTF8, "application/json"));
+            var res = await Client.PutAsync(url,
+                new StringContent(data?.ToString() ?? throw new InvalidOperationException(), Encoding.UTF8,
+                    "application/json"));
             var content = await res.Content.ReadAsStringAsync();
             return StatusCode((int)res.StatusCode, content);
         }

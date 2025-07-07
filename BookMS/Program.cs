@@ -23,7 +23,7 @@ builder.Services.AddEntityFrameworkSqlServer()
     .AddSqlServer<GatewayContext>(builder.Configuration.GetConnectionString("Local"));
 
 // Add repo
-builder.Services.AddSingleton<IGenericRepo<Book>, BookRepo>();
+builder.Services.AddScoped<IGenericRepo<Book>, BookRepo>();
 
 // Add fault tolerance policies
 builder.Services.AddHttpClient("BookClient");

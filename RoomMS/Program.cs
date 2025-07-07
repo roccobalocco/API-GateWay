@@ -23,7 +23,7 @@ builder.Services.AddEntityFrameworkSqlServer()
     .AddSqlServer<GatewayContext>(builder.Configuration.GetConnectionString("Local"));
 
 // Add repo
-builder.Services.AddSingleton<IGenericRepo<Room>, RoomRepo>();
+builder.Services.AddScoped<IGenericRepo<Room>, RoomRepo>();
 
 // Add fault tolerance policies
 builder.Services.AddHttpClient("RoomClient");
