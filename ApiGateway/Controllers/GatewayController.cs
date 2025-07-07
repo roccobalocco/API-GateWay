@@ -19,72 +19,72 @@ public class GatewayController(IHttpClientFactory clientFactory, IOptions<MicroS
     private HttpClient Client => clientFactory.CreateClient("GatewayClient");
 
     // ROOM
-    [HttpGet("rooms")]
+    [HttpGet("room")]
     public async Task<IActionResult> GetRooms() =>
-        await ProxyGet($"{_services.Room}/rooms");
+        await ProxyGet($"{_services.Room}/room");
 
-    [HttpPost("rooms")]
+    [HttpPost("room")]
     public async Task<IActionResult> CreateRoom([FromBody] Room data) =>
-        await ProxyPost($"{_services.Room}/rooms", data);
+        await ProxyPost($"{_services.Room}/room", data);
 
-    [HttpPut("rooms/{id}")]
+    [HttpPut("room/{id}")]
     public async Task<IActionResult> UpdateRoom(int id, [FromBody] Room data) =>
-        await ProxyPut($"{_services.Room}/rooms/{id}", data);
+        await ProxyPut($"{_services.Room}/room/{id}", data);
 
-    [HttpDelete("rooms/{id}")]
+    [HttpDelete("room/{id}")]
     public async Task<IActionResult> DeleteRoom(int id) =>
-        await ProxyDelete($"{_services.Room}/rooms/{id}");
+        await ProxyDelete($"{_services.Room}/room/{id}");
 
     // BOOK
-    [HttpGet("books")]
+    [HttpGet("book")]
     public async Task<IActionResult> GetBooks() =>
-        await ProxyGet($"{_services.Book}/books");
+        await ProxyGet($"{_services.Book}/book");
 
-    [HttpPost("books")]
+    [HttpPost("book")]
     public async Task<IActionResult> CreateBook([FromBody] Book data) =>
-        await ProxyPost($"{_services.Book}/books", data);
+        await ProxyPost($"{_services.Book}/book", data);
 
-    [HttpPut("books/{id}")]
+    [HttpPut("book/{id}")]
     public async Task<IActionResult> UpdateBook(int id, [FromBody] Book data) =>
-        await ProxyPut($"{_services.Book}/books/{id}", data);
+        await ProxyPut($"{_services.Book}/book/{id}", data);
 
-    [HttpDelete("books/{id:int}")]
+    [HttpDelete("book/{id:int}")]
     public async Task<IActionResult> DeleteBook(int id) =>
-        await ProxyDelete($"{_services.Book}/books/{id}");
+        await ProxyDelete($"{_services.Book}/book/{id}");
 
     // LOAN
-    [HttpGet("loans")]
+    [HttpGet("loan")]
     public async Task<IActionResult> GetLoans() =>
-        await ProxyGet($"{_services.Loan}/loans");
+        await ProxyGet($"{_services.Loan}/loan");
 
-    [HttpPost("loans")]
+    [HttpPost("loan")]
     public async Task<IActionResult> CreateLoan([FromBody] Loan data) =>
-        await ProxyPost($"{_services.Loan}/loans", data);
+        await ProxyPost($"{_services.Loan}/loan", data);
 
-    [HttpPut("loans/{id:int}")]
+    [HttpPut("loan/{id:int}")]
     public async Task<IActionResult> UpdateLoan(int id, [FromBody] Loan data) =>
-        await ProxyPut($"{_services.Loan}/loans/{id}", data);
+        await ProxyPut($"{_services.Loan}/loan/{id}", data);
 
-    [HttpDelete("loans/{id:int}")]
+    [HttpDelete("loan/{id:int}")]
     public async Task<IActionResult> DeleteLoan(int id) =>
-        await ProxyDelete($"{_services.Loan}/loans/{id}");
+        await ProxyDelete($"{_services.Loan}/loan/{id}");
 
     // USER
-    [HttpGet("users")]
+    [HttpGet("user")]
     public async Task<IActionResult> GetUsers() =>
-        await ProxyGet($"{_services.User}/users");
+        await ProxyGet($"{_services.User}/user");
 
-    [HttpPost("users")]
+    [HttpPost("user")]
     public async Task<IActionResult> CreateUser([FromBody] User data) =>
-        await ProxyPost($"{_services.User}/users", data);
+        await ProxyPost($"{_services.User}/user", data);
 
-    [HttpPut("users/{id:int}")]
+    [HttpPut("user/{id:int}")]
     public async Task<IActionResult> UpdateUser(int id, [FromBody] User data) =>
-        await ProxyPut($"{_services.User}/users/{id}", data);
+        await ProxyPut($"{_services.User}/user/{id}", data);
 
-    [HttpDelete("users/{id:int}")]
+    [HttpDelete("user/{id:int}")]
     public async Task<IActionResult> DeleteUser(int id) =>
-        await ProxyDelete($"{_services.User}/users/{id}");
+        await ProxyDelete($"{_services.User}/user/{id}");
 
     // ---------- Proxy Helper Methods ----------
     private async Task<IActionResult> ProxyGet(string url)
@@ -108,9 +108,9 @@ public class GatewayController(IHttpClientFactory clientFactory, IOptions<MicroS
         LogRequest();
         try
         {
+            var json = JsonSerializer.Serialize(data); // <-- serialize properly
             var res = await Client.PostAsync(url,
-                new StringContent(data?.ToString() ?? throw new InvalidOperationException(), Encoding.UTF8,
-                    "application/json"));
+                new StringContent(json, Encoding.UTF8, "application/json"));
             var content = await res.Content.ReadAsStringAsync();
             return StatusCode((int)res.StatusCode, content);
         }
@@ -126,9 +126,9 @@ public class GatewayController(IHttpClientFactory clientFactory, IOptions<MicroS
         LogRequest();
         try
         {
-            var res = await Client.PutAsync(url,
-                new StringContent(data?.ToString() ?? throw new InvalidOperationException(), Encoding.UTF8,
-                    "application/json"));
+            var json = JsonSerializer.Serialize(data); // <-- serialize properly
+            var res = await Client.PostAsync(url,
+                new StringContent(json, Encoding.UTF8, "application/json"));
             var content = await res.Content.ReadAsStringAsync();
             return StatusCode((int)res.StatusCode, content);
         }
