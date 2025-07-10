@@ -13,7 +13,7 @@ using NLog;
 namespace ApiGateway.Controllers;
 
 [ApiController]
-[Authorize] // Tutti gli endpoint richiedono token JWT valido
+[Authorize]
 [Route("api/[controller]")]
 public class GatewayController(
     IHttpClientFactory clientFactory,
@@ -25,7 +25,14 @@ public class GatewayController(
     private readonly UsersAllowedOptions _usersAllowedOptions = usersAllowedOptionsAccessor.Value;
     private readonly Logger _logger = LogManager.GetCurrentClassLogger();
 
-    private HttpClient Client => clientFactory.CreateClient("GatewayClient");
+    private HttpClient CreateClientForService(string serviceName) => serviceName switch
+    {
+        "Room" => clientFactory.CreateClient("RoomClient"),
+        "Book" => clientFactory.CreateClient("BookClient"),
+        "Loan" => clientFactory.CreateClient("LoanClient"),
+        "User" => clientFactory.CreateClient("UserClient"),
+        _ => throw new ArgumentException("Invalid service name")
+    };
 
     [AllowAnonymous]
     [HttpPost("login")]
@@ -35,7 +42,6 @@ public class GatewayController(
         if (!_usersAllowedOptions.UsersAllowed.Any(user =>
                 user.Username == request.Username && user.Password == request.Password))
             return Unauthorized("Invalid credentials");
-
 
         var jwtOptions = jwtOptionsAccessor.Value;
         var tokenHandler = new System.IdentityModel.Tokens.Jwt.JwtSecurityTokenHandler();
@@ -61,148 +67,154 @@ public class GatewayController(
         return Ok(new LoginResponse { AccessToken = tokenString });
     }
 
-
     // ROOM
     [HttpGet("room")]
-    public async Task<IActionResult> GetRooms() =>
-        await ProxyGet($"{_services.Room}/room");
+    public Task<IActionResult> GetRooms() =>
+        ProxyGet($"{_services.Room}/room", "Room");
 
     [HttpPost("room")]
-    public async Task<IActionResult> CreateRoom([FromBody] Room data) =>
-        await ProxyPost($"{_services.Room}/room", data);
+    public Task<IActionResult> CreateRoom([FromBody] Room data) =>
+        ProxyPost($"{_services.Room}/room", data, "Room");
 
     [HttpPut("room/{id}")]
-    public async Task<IActionResult> UpdateRoom(int id, [FromBody] Room data) =>
-        await ProxyPut($"{_services.Room}/room/{id}", data);
+    public Task<IActionResult> UpdateRoom(int id, [FromBody] Room data) =>
+        ProxyPut($"{_services.Room}/room/{id}", data, "Room");
 
     [HttpDelete("room/{id}")]
-    public async Task<IActionResult> DeleteRoom(int id) =>
-        await ProxyDelete($"{_services.Room}/room/{id}");
+    public Task<IActionResult> DeleteRoom(int id) =>
+        ProxyDelete($"{_services.Room}/room/{id}", "Room");
 
     // BOOK
     [HttpGet("book")]
-    public async Task<IActionResult> GetBooks() =>
-        await ProxyGet($"{_services.Book}/book");
+    public Task<IActionResult> GetBooks() =>
+        ProxyGet($"{_services.Book}/book", "Book");
 
     [HttpPost("book")]
-    public async Task<IActionResult> CreateBook([FromBody] Book data) =>
-        await ProxyPost($"{_services.Book}/book", data);
+    public Task<IActionResult> CreateBook([FromBody] Book data) =>
+        ProxyPost($"{_services.Book}/book", data, "Book");
 
     [HttpPut("book/{id}")]
-    public async Task<IActionResult> UpdateBook(int id, [FromBody] Book data) =>
-        await ProxyPut($"{_services.Book}/book/{id}", data);
+    public Task<IActionResult> UpdateBook(int id, [FromBody] Book data) =>
+        ProxyPut($"{_services.Book}/book/{id}", data, "Book");
 
     [HttpDelete("book/{id:int}")]
-    public async Task<IActionResult> DeleteBook(int id) =>
-        await ProxyDelete($"{_services.Book}/book/{id}");
+    public Task<IActionResult> DeleteBook(int id) =>
+        ProxyDelete($"{_services.Book}/book/{id}", "Book");
 
     // LOAN
     [HttpGet("loan")]
-    public async Task<IActionResult> GetLoans() =>
-        await ProxyGet($"{_services.Loan}/loan");
+    public Task<IActionResult> GetLoans() =>
+        ProxyGet($"{_services.Loan}/loan", "Loan");
 
     [HttpPost("loan")]
-    public async Task<IActionResult> CreateLoan([FromBody] Loan data) =>
-        await ProxyPost($"{_services.Loan}/loan", data);
+    public Task<IActionResult> CreateLoan([FromBody] Loan data) =>
+        ProxyPost($"{_services.Loan}/loan", data, "Loan");
 
     [HttpPut("loan/{id:int}")]
-    public async Task<IActionResult> UpdateLoan(int id, [FromBody] Loan data) =>
-        await ProxyPut($"{_services.Loan}/loan/{id}", data);
+    public Task<IActionResult> UpdateLoan(int id, [FromBody] Loan data) =>
+        ProxyPut($"{_services.Loan}/loan/{id}", data, "Loan");
 
     [HttpDelete("loan/{id:int}")]
-    public async Task<IActionResult> DeleteLoan(int id) =>
-        await ProxyDelete($"{_services.Loan}/loan/{id}");
+    public Task<IActionResult> DeleteLoan(int id) =>
+        ProxyDelete($"{_services.Loan}/loan/{id}", "Loan");
 
     // USER
     [HttpGet("user")]
-    public async Task<IActionResult> GetUsers() =>
-        await ProxyGet($"{_services.User}/user");
+    public Task<IActionResult> GetUsers() =>
+        ProxyGet($"{_services.User}/user", "User");
 
     [HttpPost("user")]
-    public async Task<IActionResult> CreateUser([FromBody] User data) =>
-        await ProxyPost($"{_services.User}/user", data);
+    public Task<IActionResult> CreateUser([FromBody] User data) =>
+        ProxyPost($"{_services.User}/user", data, "User");
 
     [HttpPut("user/{id:int}")]
-    public async Task<IActionResult> UpdateUser(int id, [FromBody] User data) =>
-        await ProxyPut($"{_services.User}/user/{id}", data);
+    public Task<IActionResult> UpdateUser(int id, [FromBody] User data) =>
+        ProxyPut($"{_services.User}/user/{id}", data, "User");
 
     [HttpDelete("user/{id:int}")]
-    public async Task<IActionResult> DeleteUser(int id) =>
-        await ProxyDelete($"{_services.User}/user/{id}");
+    public Task<IActionResult> DeleteUser(int id) =>
+        ProxyDelete($"{_services.User}/user/{id}", "User");
 
     // ---------- Proxy Helper Methods ----------
-    private async Task<IActionResult> ProxyGet(string url)
+    private async Task<IActionResult> ProxyGet(string url, string serviceName)
     {
         LogRequest();
         try
         {
-            var res = await Client.GetAsync(url);
+            var client = CreateClientForService(serviceName);
+            var res = await client.GetAsync(url);
             var content = await res.Content.ReadAsStringAsync();
             return StatusCode((int)res.StatusCode, content);
         }
         catch (Exception ex)
         {
-            _logger.Error(ex, "ProxyGet error");
+            _logger.Error(ex, $"ProxyGet error on {serviceName}");
             return StatusCode(503, $"Service unavailable: {ex.Message}");
         }
     }
 
-    private async Task<IActionResult> ProxyPost<T>(string url, T data)
+    private async Task<IActionResult> ProxyPost<T>(string url, T data, string serviceName)
     {
         LogRequest();
         try
         {
-            var json = JsonSerializer.Serialize(data); // <-- serialize properly
-            var res = await Client.PostAsync(url,
+            var client = CreateClientForService(serviceName);
+            var json = JsonSerializer.Serialize(data);
+            var res = await client.PostAsync(url,
                 new StringContent(json, Encoding.UTF8, "application/json"));
             var content = await res.Content.ReadAsStringAsync();
             return StatusCode((int)res.StatusCode, content);
         }
         catch (Exception ex)
         {
-            _logger.Error(ex, "ProxyPost error");
+            _logger.Error(ex, $"ProxyPost error on {serviceName}");
             return StatusCode(503, $"Service unavailable: {ex.Message}");
         }
     }
 
-    private async Task<IActionResult> ProxyPut<T>(string url, T data)
+    private async Task<IActionResult> ProxyPut<T>(string url, T data, string serviceName)
     {
         LogRequest();
         try
         {
-            var json = JsonSerializer.Serialize(data); // <-- serialize properly
-            var res = await Client.PostAsync(url,
+            var client = CreateClientForService(serviceName);
+            var json = JsonSerializer.Serialize(data);
+            var res = await client.PutAsync(url,
                 new StringContent(json, Encoding.UTF8, "application/json"));
             var content = await res.Content.ReadAsStringAsync();
             return StatusCode((int)res.StatusCode, content);
         }
         catch (Exception ex)
         {
-            _logger.Error(ex, "ProxyPut error");
+            _logger.Error(ex, $"ProxyPut error on {serviceName}");
             return StatusCode(503, $"Service unavailable: {ex.Message}");
         }
     }
 
-    private async Task<IActionResult> ProxyDelete(string url)
+    private async Task<IActionResult> ProxyDelete(string url, string serviceName)
     {
         LogRequest();
         try
         {
-            var res = await Client.DeleteAsync(url);
+            var client = CreateClientForService(serviceName);
+            var res = await client.DeleteAsync(url);
             var content = await res.Content.ReadAsStringAsync();
             return StatusCode((int)res.StatusCode, content);
         }
         catch (Exception ex)
         {
-            _logger.Error(ex, "ProxyDelete error");
+            _logger.Error(ex, $"ProxyDelete error on {serviceName}");
             return StatusCode(503, $"Service unavailable: {ex.Message}");
         }
     }
 
     private void LogRequest()
     {
+        var ip = HttpContext.Connection.RemoteIpAddress?.ToString();
         var method = HttpContext.Request.Method;
         var path = HttpContext.Request.Path;
-        _logger.Info($"API Gateway Proxy Request: {method} {path}");
+        var user = User.Identity?.Name ?? "anonymous";
+
+        _logger.Info($"Request from IP={ip} User={user} Method={method} Path={path}");
     }
 }

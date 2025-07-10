@@ -12,7 +12,7 @@
 
 - [x] Implementare i microservizi ASP.NET Core (CRUD) per Books, Loans, Rooms e Users, ognuno containerizzato con Docker.
 - [x] Configurare i servizi con connessioni al database MSSQL condiviso (stringhe di connessione, migrazioni).
-- [ ] Implementare endpoint di salute (*health checks*) in ogni servizio per readiness e liveness.
+- [x] Implementare endpoint di salute (*health checks*) in ogni servizio per readiness e liveness.
 - [ ] Applicare pattern di resilienza (circuit breaker, retry) tra i servizi per tolleranza ai guasti.
 - [ ] Verificare che ogni servizio funzioni indipendentemente e sia in grado di scalare orizzontalmente (aumentando il numero di repliche).
 

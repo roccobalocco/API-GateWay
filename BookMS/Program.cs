@@ -1,6 +1,7 @@
 using BookMS.Repository;
 using EF.EF;
 using EF.Models;
+using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.EntityFrameworkCore;
 using Utility.Interface;
 using NLog.Targets;
@@ -29,7 +30,19 @@ builder.Services.AddScoped<IGenericRepo<Book>, BookRepo>();
 // Add fault tolerance policies
 builder.Services.AddHttpClient("BookClient");
 
+builder.Services.AddHealthChecks();
+
 var app = builder.Build();
+
+app.MapHealthChecks("/health/liveness", new HealthCheckOptions
+{
+    Predicate = _ => false // solo verifica che l'app sia attiva
+});
+
+app.MapHealthChecks("/health/readiness", new HealthCheckOptions
+{
+    Predicate = _ => true // esegue tutti gli health check registrati
+});
 
 // ➕ Migration
 using (var scope = app.Services.CreateScope())

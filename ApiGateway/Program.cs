@@ -2,12 +2,15 @@ using System.Text;
 using ApiGateway.Options;
 using EF.EF;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Polly;
 using NLog.Targets;
 using NLog.Config;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
+using Microsoft.AspNetCore.RateLimiting;
+using System.Threading.RateLimiting;
 
 var config = new LoggingConfiguration();
 var ftarget = new FileTarget();
@@ -19,7 +22,7 @@ var builder = WebApplication.CreateBuilder(args);
 // Add services to the container.
 builder.Services.AddControllers();
 
-// options
+// OPTIONS
 builder.Services.Configure<MicroServicesOptions>(
     builder.Configuration.GetSection(nameof(MicroServicesOptions)));
 builder.Services.Configure<UsersAllowedOptions>(
@@ -63,17 +66,97 @@ builder.Services.AddSwaggerGen(c =>
 builder.Services.AddDbContext<GatewayContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("Local")));
 
-// Add fault tolerance policies
-builder.Services.AddHttpClient("GatewayClient")
-    .AddStandardResilienceHandler(options =>
+// ➕ FAULT TOLERANCE PER SERVICE USING NAMED HTTP CLIENTS
+
+builder.Services.AddHttpClient("RoomClient", client =>
+{
+    client.Timeout = TimeSpan.FromSeconds(5);
+})
+.AddPolicyHandler(Policy.BulkheadAsync<HttpResponseMessage>(10, 20))
+.AddStandardResilienceHandler(options =>
+{
+    options.Retry.MaxRetryAttempts = 3;
+    options.Retry.BackoffType = DelayBackoffType.Exponential;
+    options.Retry.MaxDelay = TimeSpan.FromSeconds(2);
+    options.CircuitBreaker.FailureRatio = 0.5;
+    options.CircuitBreaker.MinimumThroughput = 10;
+    options.CircuitBreaker.SamplingDuration = TimeSpan.FromSeconds(30);
+    options.CircuitBreaker.BreakDuration = TimeSpan.FromSeconds(20);
+});
+
+builder.Services.AddHttpClient("BookClient", client =>
+{
+    client.Timeout = TimeSpan.FromSeconds(5);
+})
+.AddPolicyHandler(Policy.BulkheadAsync<HttpResponseMessage>(8, 15))
+.AddStandardResilienceHandler(options =>
+{
+    options.Retry.MaxRetryAttempts = 4;
+    options.Retry.BackoffType = DelayBackoffType.Exponential;
+    options.Retry.MaxDelay = TimeSpan.FromSeconds(2);
+    options.CircuitBreaker.FailureRatio = 0.4;
+    options.CircuitBreaker.MinimumThroughput = 12;
+    options.CircuitBreaker.SamplingDuration = TimeSpan.FromSeconds(30);
+    options.CircuitBreaker.BreakDuration = TimeSpan.FromSeconds(25);
+});
+
+builder.Services.AddHttpClient("LoanClient", client =>
+{
+    client.Timeout = TimeSpan.FromSeconds(5);
+})
+.AddPolicyHandler(Policy.BulkheadAsync<HttpResponseMessage>(6, 10))
+.AddStandardResilienceHandler(options =>
+{
+    options.Retry.MaxRetryAttempts = 3;
+    options.Retry.BackoffType = DelayBackoffType.Exponential;
+    options.Retry.MaxDelay = TimeSpan.FromSeconds(3);
+    options.CircuitBreaker.FailureRatio = 0.6;
+    options.CircuitBreaker.MinimumThroughput = 8;
+    options.CircuitBreaker.SamplingDuration = TimeSpan.FromSeconds(40);
+    options.CircuitBreaker.BreakDuration = TimeSpan.FromSeconds(30);
+});
+
+builder.Services.AddHttpClient("UserClient", client =>
+{
+    client.Timeout = TimeSpan.FromSeconds(5);
+})
+.AddPolicyHandler(Policy.BulkheadAsync<HttpResponseMessage>(10, 20))
+.AddStandardResilienceHandler(options =>
+{
+    options.Retry.MaxRetryAttempts = 5;
+    options.Retry.BackoffType = DelayBackoffType.Exponential;
+    options.Retry.MaxDelay = TimeSpan.FromSeconds(1);
+    options.CircuitBreaker.FailureRatio = 0.75;
+    options.CircuitBreaker.MinimumThroughput = 10;
+    options.CircuitBreaker.SamplingDuration = TimeSpan.FromSeconds(60);
+    options.CircuitBreaker.BreakDuration = TimeSpan.FromSeconds(30);
+});
+
+// ➕ RATE LIMITING (.NET 8)
+builder.Services.AddRateLimiter(options =>
+{
+    options.AddFixedWindowLimiter("FixedPolicy", opt =>
     {
-        options.Retry.MaxRetryAttempts = 3;
-        options.Retry.BackoffType = DelayBackoffType.Exponential;
-        options.CircuitBreaker.FailureRatio = 0.5;
-        options.CircuitBreaker.SamplingDuration = TimeSpan.FromSeconds(30);
-        options.CircuitBreaker.MinimumThroughput = 4;
-        options.CircuitBreaker.BreakDuration = TimeSpan.FromSeconds(15);
+        opt.Window = TimeSpan.FromMinutes(1);
+        opt.PermitLimit = 800;
+        opt.QueueLimit = 50;
+        opt.QueueProcessingOrder = QueueProcessingOrder.OldestFirst;
     });
+
+    options.AddPolicy("PerIpLimiter", context =>
+    {
+        var ip = context.Connection.RemoteIpAddress?.ToString() ?? "unknown";
+        return RateLimitPartition.GetFixedWindowLimiter(ip, _ => new FixedWindowRateLimiterOptions
+        {
+            PermitLimit = 60,
+            Window = TimeSpan.FromMinutes(1),
+            QueueLimit = 4,
+            QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
+            AutoReplenishment = true
+        });
+    });
+});
+
 var jwtOptions = builder.Configuration.GetSection(nameof(JWTOptions)).Get<JWTOptions>();
 var key = Encoding.ASCII.GetBytes(jwtOptions!.SecretKey);
 
@@ -93,10 +176,13 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     });
 
 builder.Services.AddAuthorization();
+builder.Services.AddHealthChecks();
 
 var app = builder.Build();
 
-// ➕ Migration
+app.MapHealthChecks("/health/liveness", new HealthCheckOptions { Predicate = _ => false });
+app.MapHealthChecks("/health/readiness", new HealthCheckOptions { Predicate = _ => true });
+
 using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<GatewayContext>();
@@ -111,9 +197,13 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
-app.UseAuthentication();  
+app.UseRateLimiter();
+
+app.UseAuthentication();
 app.UseAuthorization();
 
-app.MapControllers();
+app.MapControllers()
+    .RequireRateLimiting("FixedPolicy")
+    .RequireRateLimiting("PerIpLimiter");
 
 app.Run();

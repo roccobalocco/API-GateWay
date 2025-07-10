@@ -22,8 +22,10 @@ For each topic we have a microservice and the main desk orquestrates the usage o
 - *minikube start* to start minikube on the local machine
 - *kubectl apply -f kubernetes.yaml* effectively use the manifest 
 - *kubectl get all -n cloudmare* see the status
-- *minikube service apigateway -n cloudmare* start the node because of the "fake" load balancer support by mini-kube
+- *minikube service apigateway -n cloudmare* // to start the service apigateay
 - *kubectl get po -A* to see the status
 - *minikube dashboard --url* to start the dashboard and see the url of it
 - *minikube addons enable metrics-server*
+- *minikube addons enable ingress*
+- *kubectl -n cloudmare get ingress apigateway-ingress* // url to call to effectively use the load balancer
 

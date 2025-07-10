@@ -1,6 +1,7 @@
 using EF.EF;
 using EF.Models;
 using LoanMS.Repository;
+using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Utility.Interface;
 using NLog.Targets;
 using NLog.Config;
@@ -25,7 +26,19 @@ builder.Services.AddScoped<IGenericRepo<Loan>, LoanRepo>();
 
 builder.Services.AddHttpClient("LoanClient");
 
+builder.Services.AddHealthChecks();
+
 var app = builder.Build();
+
+app.MapHealthChecks("/health/liveness", new HealthCheckOptions
+{
+    Predicate = _ => false // solo verifica che l'app sia attiva
+});
+
+app.MapHealthChecks("/health/readiness", new HealthCheckOptions
+{
+    Predicate = _ => true // esegue tutti gli health check registrati
+});
 
 // ➕ Migration
 using (var scope = app.Services.CreateScope())
