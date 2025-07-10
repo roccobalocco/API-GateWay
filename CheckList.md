@@ -2,23 +2,23 @@
 
 ## Pianificazione e Architettura
 
-- [ ]  Definire i domini dell’applicazione (Books, Loans, Rooms, Users) e progettare microservizi indipendenti per ciascuno.
-- [ ] Utilizzare .NET 8.0 per implementare i microservizi e l’**API Gateway** (ad esempio Ocelot come gateway API leggero).
-- [ ] Creare una singola istanza Docker per MSSQL Server come database condiviso e configurarla con persistenza.
-- [ ] Pianificare l’architettura su Kubernetes, assicurando replicazione delle istanze e bilanciamento del carico.
+- [x]  Definire i domini dell’applicazione (Books, Loans, Rooms, Users) e progettare microservizi indipendenti per ciascuno.
+- [x] Utilizzare .NET 8.0 per implementare i microservizi e l’**API Gateway** (ad esempio Ocelot come gateway API leggero).
+- [x] Creare una singola istanza Docker per MSSQL Server come database condiviso e configurarla con persistenza.
+- [x] Pianificare l’architettura su Kubernetes, assicurando replicazione delle istanze e bilanciamento del carico.
 - [ ] Documentare tutte le scelte architetturali, includendo diagrammi di flusso e sequenza delle chiamate API.
 
 ## Microservizi e Database
 
-- [ ] Implementare i microservizi ASP.NET Core (CRUD) per Books, Loans, Rooms e Users, ognuno containerizzato con Docker.
-- [ ] Configurare i servizi con connessioni al database MSSQL condiviso (stringhe di connessione, migrazioni).
+- [x] Implementare i microservizi ASP.NET Core (CRUD) per Books, Loans, Rooms e Users, ognuno containerizzato con Docker.
+- [x] Configurare i servizi con connessioni al database MSSQL condiviso (stringhe di connessione, migrazioni).
 - [ ] Implementare endpoint di salute (*health checks*) in ogni servizio per readiness e liveness.
 - [ ] Applicare pattern di resilienza (circuit breaker, retry) tra i servizi per tolleranza ai guasti.
 - [ ] Verificare che ogni servizio funzioni indipendentemente e sia in grado di scalare orizzontalmente (aumentando il numero di repliche).
 
 ## API Gateway
 
-- [ ] Scegliere e configurare l’API Gateway (ad es. Ocelot) per instradare le richieste alle API dei microservizi.
+- [x] Scegliere e configurare l’API Gateway (ad es. Ocelot) per instradare le richieste alle API dei microservizi.
 - [ ] Implementare logica di routing e versioning nel gateway, eventualmente con più istanze gateway dedicate a funzioni diverse.
 - [ ] Abilitare l’autenticazione centralizzata via token JWT (es. IdentityServer) a livello di gateway.
 - [ ] Configurare l’autorizzazione (claim/ruoli) nelle rotte protette del gateway.

@@ -1,22 +1,66 @@
+using System.Security.Claims;
 using ApiGateway.Options;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
 using System.Text;
 using System.Text.Json;
+using ApiGateway.Models;
 using EF.Models;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.IdentityModel.Tokens;
 using NLog;
 
 namespace ApiGateway.Controllers;
 
 [ApiController]
+[Authorize] // Tutti gli endpoint richiedono token JWT valido
 [Route("api/[controller]")]
-public class GatewayController(IHttpClientFactory clientFactory, IOptions<MicroServicesOptions> options)
+public class GatewayController(
+    IHttpClientFactory clientFactory,
+    IOptions<MicroServicesOptions> options,
+    IOptions<UsersAllowedOptions> usersAllowedOptionsAccessor)
     : ControllerBase
 {
     private readonly MicroServicesOptions _services = options.Value;
+    private readonly UsersAllowedOptions _usersAllowedOptions = usersAllowedOptionsAccessor.Value;
     private readonly Logger _logger = LogManager.GetCurrentClassLogger();
 
     private HttpClient Client => clientFactory.CreateClient("GatewayClient");
+
+    [AllowAnonymous]
+    [HttpPost("login")]
+    public IActionResult Login([FromBody] LoginInformation request,
+        [FromServices] IOptions<JWTOptions> jwtOptionsAccessor)
+    {
+        if (!_usersAllowedOptions.UsersAllowed.Any(user =>
+                user.Username == request.Username && user.Password == request.Password))
+            return Unauthorized("Invalid credentials");
+
+
+        var jwtOptions = jwtOptionsAccessor.Value;
+        var tokenHandler = new System.IdentityModel.Tokens.Jwt.JwtSecurityTokenHandler();
+        var key = Encoding.ASCII.GetBytes(jwtOptions.SecretKey);
+
+        var tokenDescriptor = new SecurityTokenDescriptor
+        {
+            Subject = new ClaimsIdentity([
+                new Claim(ClaimTypes.Name, request.Username),
+                new Claim(ClaimTypes.Role, "Admin")
+            ]),
+            Expires = DateTime.UtcNow.AddMinutes(jwtOptions.ExpiryMinutes),
+            Issuer = jwtOptions.Issuer,
+            Audience = jwtOptions.Audience,
+            SigningCredentials = new SigningCredentials(
+                new SymmetricSecurityKey(key),
+                SecurityAlgorithms.HmacSha512Signature)
+        };
+
+        var token = tokenHandler.CreateToken(tokenDescriptor);
+        var tokenString = tokenHandler.WriteToken(token);
+
+        return Ok(new LoginResponse { AccessToken = tokenString });
+    }
+
 
     // ROOM
     [HttpGet("room")]
