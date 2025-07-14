@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Security.Claims;
 using ApiGateway.Options;
 using Microsoft.AspNetCore.Mvc;
@@ -5,6 +6,7 @@ using Microsoft.Extensions.Options;
 using System.Text;
 using System.Text.Json;
 using ApiGateway.Models;
+using ApiGateway.Services;
 using EF.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.IdentityModel.Tokens;
@@ -18,12 +20,14 @@ namespace ApiGateway.Controllers;
 public class GatewayController(
     IHttpClientFactory clientFactory,
     IOptions<MicroServicesOptions> options,
-    IOptions<UsersAllowedOptions> usersAllowedOptionsAccessor)
+    IOptions<UsersAllowedOptions> usersAllowedOptionsAccessor,
+    MetricsService metrics)
     : ControllerBase
 {
     private readonly MicroServicesOptions _services = options.Value;
     private readonly UsersAllowedOptions _usersAllowedOptions = usersAllowedOptionsAccessor.Value;
     private readonly Logger _logger = LogManager.GetCurrentClassLogger();
+    private readonly MetricsService _metrics = metrics;
 
     private HttpClient CreateClientForService(string serviceName) => serviceName switch
     {
@@ -33,6 +37,8 @@ public class GatewayController(
         "User" => clientFactory.CreateClient("UserClient"),
         _ => throw new ArgumentException("Invalid service name")
     };
+
+    #region login
 
     [AllowAnonymous]
     [HttpPost("login")]
@@ -51,7 +57,7 @@ public class GatewayController(
         {
             Subject = new ClaimsIdentity([
                 new Claim(ClaimTypes.Name, request.Username),
-                new Claim(ClaimTypes.Role, "Admin")
+                new Claim(ClaimTypes.Role, request.Username.Contains("Admin") ? "Admin" : "User")
             ]),
             Expires = DateTime.UtcNow.AddMinutes(jwtOptions.ExpiryMinutes),
             Issuer = jwtOptions.Issuer,
@@ -66,6 +72,10 @@ public class GatewayController(
 
         return Ok(new LoginResponse { AccessToken = tokenString });
     }
+
+    #endregion
+
+    #region crud to microservices
 
     // ROOM
     [HttpGet("room")]
@@ -135,27 +145,37 @@ public class GatewayController(
     public Task<IActionResult> DeleteUser(int id) =>
         ProxyDelete($"{_services.User}/user/{id}", "User");
 
-    // ---------- Proxy Helper Methods ----------
+    #endregion
+
+    #region proxy
+
     private async Task<IActionResult> ProxyGet(string url, string serviceName)
     {
         LogRequest();
+        var sw = Stopwatch.StartNew();
         try
         {
             var client = CreateClientForService(serviceName);
             var res = await client.GetAsync(url);
             var content = await res.Content.ReadAsStringAsync();
+            sw.Stop();
+            _metrics.RecordRequest(serviceName, "GET", url, User.Identity?.Name ?? "anonymous", sw.ElapsedMilliseconds);
             return StatusCode((int)res.StatusCode, content);
         }
         catch (Exception ex)
         {
+            sw.Stop();
+            _metrics.RecordRequest(serviceName, "GET", url, User.Identity?.Name ?? "anonymous", sw.ElapsedMilliseconds);
             _logger.Error(ex, $"ProxyGet error on {serviceName}");
             return StatusCode(503, $"Service unavailable: {ex.Message}");
         }
     }
 
+
     private async Task<IActionResult> ProxyPost<T>(string url, T data, string serviceName)
     {
         LogRequest();
+        var sw = Stopwatch.StartNew();
         try
         {
             var client = CreateClientForService(serviceName);
@@ -163,10 +183,16 @@ public class GatewayController(
             var res = await client.PostAsync(url,
                 new StringContent(json, Encoding.UTF8, "application/json"));
             var content = await res.Content.ReadAsStringAsync();
+            sw.Stop();
+            _metrics.RecordRequest(serviceName, "POST", url, User.Identity?.Name ?? "anonymous",
+                sw.ElapsedMilliseconds);
             return StatusCode((int)res.StatusCode, content);
         }
         catch (Exception ex)
         {
+            sw.Stop();
+            _metrics.RecordRequest(serviceName, "POST", url, User.Identity?.Name ?? "anonymous",
+                sw.ElapsedMilliseconds);
             _logger.Error(ex, $"ProxyPost error on {serviceName}");
             return StatusCode(503, $"Service unavailable: {ex.Message}");
         }
@@ -175,6 +201,7 @@ public class GatewayController(
     private async Task<IActionResult> ProxyPut<T>(string url, T data, string serviceName)
     {
         LogRequest();
+        var sw = Stopwatch.StartNew();
         try
         {
             var client = CreateClientForService(serviceName);
@@ -182,10 +209,14 @@ public class GatewayController(
             var res = await client.PutAsync(url,
                 new StringContent(json, Encoding.UTF8, "application/json"));
             var content = await res.Content.ReadAsStringAsync();
+            sw.Stop();
+            _metrics.RecordRequest(serviceName, "PUT", url, User.Identity?.Name ?? "anonymous", sw.ElapsedMilliseconds);
             return StatusCode((int)res.StatusCode, content);
         }
         catch (Exception ex)
         {
+            sw.Stop();
+            _metrics.RecordRequest(serviceName, "PUT", url, User.Identity?.Name ?? "anonymous", sw.ElapsedMilliseconds);
             _logger.Error(ex, $"ProxyPut error on {serviceName}");
             return StatusCode(503, $"Service unavailable: {ex.Message}");
         }
@@ -194,19 +225,69 @@ public class GatewayController(
     private async Task<IActionResult> ProxyDelete(string url, string serviceName)
     {
         LogRequest();
+        var sw = Stopwatch.StartNew();
         try
         {
             var client = CreateClientForService(serviceName);
             var res = await client.DeleteAsync(url);
             var content = await res.Content.ReadAsStringAsync();
+            sw.Stop();
+            _metrics.RecordRequest(serviceName, "DELETE", url, User.Identity?.Name ?? "anonymous",
+                sw.ElapsedMilliseconds);
             return StatusCode((int)res.StatusCode, content);
         }
         catch (Exception ex)
         {
+            sw.Stop();
+            _metrics.RecordRequest(serviceName, "DELETE", url, User.Identity?.Name ?? "anonymous",
+                sw.ElapsedMilliseconds);
             _logger.Error(ex, $"ProxyDelete error on {serviceName}");
             return StatusCode(503, $"Service unavailable: {ex.Message}");
         }
     }
+
+    #endregion
+
+    #region stats
+
+    [HttpGet("health/summary")]
+    [Authorize(Roles = "Admin")]
+    public async Task<IActionResult> GetHealthSummary()
+    {
+        var results = new Dictionary<string, string>();
+
+        foreach (var serviceName in new[] { "Room", "Book", "Loan", "User" })
+        {
+            try
+            {
+                var baseUrl = _services.GetType().GetProperty(serviceName)!
+                    .GetValue(_services)?.ToString();
+
+                var client = CreateClientForService(serviceName);
+                var res = await client.GetAsync($"{baseUrl}/health/readiness");
+
+                results[serviceName] = res.IsSuccessStatusCode ? "Ready" : "Not Ready";
+            }
+            catch (Exception)
+            {
+                results[serviceName] = "Unavailable";
+            }
+        }
+
+        return Ok(results);
+    }
+
+
+    [HttpGet("stats")]
+    [Authorize(Roles = "Admin")]
+    public IActionResult GetStats()
+    {
+        return Ok(_metrics.GetStatistics());
+    }
+
+    #endregion
+
+    #region utilities
 
     private void LogRequest()
     {
@@ -217,4 +298,6 @@ public class GatewayController(
 
         _logger.Info($"Request from IP={ip} User={user} Method={method} Path={path}");
     }
+
+    #endregion
 }

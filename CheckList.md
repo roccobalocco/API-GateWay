@@ -13,35 +13,33 @@
 - [x] Implementare i microservizi ASP.NET Core (CRUD) per Books, Loans, Rooms e Users, ognuno containerizzato con Docker.
 - [x] Configurare i servizi con connessioni al database MSSQL condiviso (stringhe di connessione, migrazioni).
 - [x] Implementare endpoint di salute (*health checks*) in ogni servizio per readiness e liveness.
-- [ ] Applicare pattern di resilienza (circuit breaker, retry) tra i servizi per tolleranza ai guasti.
-- [ ] Verificare che ogni servizio funzioni indipendentemente e sia in grado di scalare orizzontalmente (aumentando il numero di repliche).
+- [x] Applicare pattern di resilienza (circuit breaker, retry) tra i servizi per tolleranza ai guasti.
+- [x] Verificare che ogni servizio funzioni indipendentemente e sia in grado di scalare orizzontalmente (aumentando il numero di repliche).
 
 ## API Gateway
 
 - [x] Scegliere e configurare l’API Gateway (ad es. Ocelot) per instradare le richieste alle API dei microservizi.
 - [ ] Implementare logica di routing e versioning nel gateway, eventualmente con più istanze gateway dedicate a funzioni diverse.
-- [ ] Abilitare l’autenticazione centralizzata via token JWT (es. IdentityServer) a livello di gateway.
-- [ ] Configurare l’autorizzazione (claim/ruoli) nelle rotte protette del gateway.
+- [x] Abilitare l’autenticazione centralizzata via token JWT (es. IdentityServer) a livello di gateway.
+- [x] Configurare l’autorizzazione (claim/ruoli) nelle rotte protette del gateway.
 - [ ] Abilitare HTTPS/TLS per le richieste esterne al gateway, garantendo connessioni criptate.
-- [ ] Implementare rate limiting e throttling sul gateway per prevenire attacchi DDoS e gestire correttamente i picchi di traffico.
+- [x] Implementare rate limiting e throttling sul gateway per prevenire attacchi DDoS e gestire correttamente i picchi di traffico.
 - [ ] Attivare logging e analisi del traffico API sul gateway per monitorare utilizzo e anomalie.
-- [ ] Distribuire più istanze dell’API Gateway in Kubernetes per alta disponibilità (evitare single point of failure).
 
 ## Kubernetes e Deployment
 
-- [ ] Scrivere manifest Kubernetes (Deployment, Service) per ogni microservizio e per il gateway.
-- [ ] Esportare il gateway all’esterno del cluster con un Service di tipo *LoadBalancer* o configurando un Ingress (NGINX).
-- [ ] Configurare un Ingress Controller Kubernetes per instradare il traffico esterno verso il gateway (regole host/path).
-- [ ] Impostare ReplicaSet/HPA (Horizontal Pod Autoscaler) per scalare automaticamente i pod in base al carico.
+- [x] Scrivere manifest Kubernetes (Deployment, Service) per ogni microservizio e per il gateway.
+- [x] Esportare il gateway all’esterno del cluster con un Service di tipo *LoadBalancer* o configurando un Ingress (NGINX).
+- [x] Configurare un Ingress Controller Kubernetes per instradare il traffico esterno verso il gateway (regole host/path).
+- [x] Impostare ReplicaSet/HPA (Horizontal Pod Autoscaler) per scalare automaticamente i pod in base al carico.
 - [ ] Testare il failover: arrestare un pod e verificare che Kubernetes instradi il traffico su pod sani.
 - [ ] Eseguire test di scalabilità orizzontale: simulare carichi crescenti e verificare l’aumento di repliche e il bilanciamento del traffico.
 
 ## Resilienza e Fault Tolerance
 
-- [ ] Configurare *readiness* e *liveness probes* per rilevare e rimuovere automaticamente i pod non funzionanti.
-- [ ] Assicurarsi che il bilanciatore di carico Kubernetes reindirizzi automaticamente il traffico da pod malfunzionanti a quelli sani.
-- [ ] Implementare meccanismi di failover e replica (ad es. più repliche dei servizi) per garantire ridondanza.
-- [ ] (Opzionale) Valutare l’adozione di un service mesh (Istio, Linkerd) per avanzato bilanciamento interno e comunicazioni sicure end-to-end.
+- [x] Configurare *readiness* e *liveness probes* per rilevare e rimuovere automaticamente i pod non funzionanti.
+- [x] Assicurarsi che il bilanciatore di carico Kubernetes reindirizzi automaticamente il traffico da pod malfunzionanti a quelli sani.
+- [x] Implementare meccanismi di failover e replica (ad es. più repliche dei servizi) per garantire ridondanza.
 
 ## Sicurezza e Monitoraggio
 

@@ -11,6 +11,7 @@ using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using Microsoft.AspNetCore.RateLimiting;
 using System.Threading.RateLimiting;
+using ApiGateway.Services;
 
 var config = new LoggingConfiguration();
 var ftarget = new FileTarget();
@@ -135,10 +136,23 @@ builder.Services.AddHttpClient("UserClient", client =>
 // ➕ RATE LIMITING (.NET 8)
 builder.Services.AddRateLimiter(options =>
 {
+    options.OnRejected = (context, token) =>
+    {
+        var logger = context.HttpContext?.RequestServices
+            .GetRequiredService<ILogger<Program>>();
+
+        var ip = context.HttpContext?.Connection.RemoteIpAddress?.ToString() ?? "unknown";
+        var path = context.HttpContext?.Request.Path.Value ?? "unknown";
+
+        logger?.LogWarning("Rate limit rejected request. IP: {IP}, Path: {Path}", ip, path);
+
+        return ValueTask.CompletedTask;
+    };
+
     options.AddFixedWindowLimiter("FixedPolicy", opt =>
     {
-        opt.Window = TimeSpan.FromMinutes(1);
         opt.PermitLimit = 800;
+        opt.Window = TimeSpan.FromMinutes(1);
         opt.QueueLimit = 50;
         opt.QueueProcessingOrder = QueueProcessingOrder.OldestFirst;
     });
@@ -146,16 +160,19 @@ builder.Services.AddRateLimiter(options =>
     options.AddPolicy("PerIpLimiter", context =>
     {
         var ip = context.Connection.RemoteIpAddress?.ToString() ?? "unknown";
-        return RateLimitPartition.GetFixedWindowLimiter(ip, _ => new FixedWindowRateLimiterOptions
-        {
-            PermitLimit = 60,
-            Window = TimeSpan.FromMinutes(1),
-            QueueLimit = 4,
-            QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
-            AutoReplenishment = true
-        });
+
+        return RateLimitPartition.GetFixedWindowLimiter(ip, _ =>
+            new FixedWindowRateLimiterOptions
+            {
+                PermitLimit = 60,
+                Window = TimeSpan.FromMinutes(1),
+                QueueLimit = 4,
+                QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
+                AutoReplenishment = true
+            });
     });
 });
+
 
 var jwtOptions = builder.Configuration.GetSection(nameof(JWTOptions)).Get<JWTOptions>();
 var key = Encoding.ASCII.GetBytes(jwtOptions!.SecretKey);
@@ -177,6 +194,7 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
 
 builder.Services.AddAuthorization();
 builder.Services.AddHealthChecks();
+builder.Services.AddSingleton<MetricsService>();
 
 var app = builder.Build();
 
