@@ -15,7 +15,6 @@ stringData:
   Local: "Server=mssql;Database=Gateway;User Id=sa;Password=<Password>;Encrypt=False;TrustServerCertificate=True"
 
 ---
-
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
@@ -45,6 +44,8 @@ spec:
       labels:
         app: mssql
     spec:
+      securityContext:
+        runAsUser: 0  # Run as root
       containers:
         - name: mssql
           image: mcr.microsoft.com/mssql/server:2019-latest
@@ -55,16 +56,25 @@ spec:
               value: "Y"
             - name: SA_PASSWORD
               value: "<Password>"
+            - name: MSSQL_PID
+              value: "Express"
+          resources:
+            requests:
+              memory: "2Gi"
+              cpu: "750m"
+            limits:
+              memory: "3Gi"
+              cpu: "1250m"
           livenessProbe:
             tcpSocket:
               port: 1433
-            initialDelaySeconds: 10
+            initialDelaySeconds: 30
             periodSeconds: 15
             failureThreshold: 3
           readinessProbe:
             tcpSocket:
               port: 1433
-            initialDelaySeconds: 5
+            initialDelaySeconds: 15
             periodSeconds: 10
             failureThreshold: 3
           volumeMounts:
@@ -88,7 +98,6 @@ spec:
       targetPort: 1433
   selector:
     app: mssql
-
 ---
 
 # bookms Deployment & Service
@@ -451,13 +460,23 @@ spec:
         - name: apigateway
           image: roccobalocco/api-gateway:latest
           ports:
-            - containerPort: 80
+            - containerPort: 8080
           resources:
             requests:
               cpu: 100m
             limits:
               cpu: 500m
           env:
+            - name: MicroServicesOptions__Room
+              value: "http://roomms:83/api"
+            - name: MicroServicesOptions__User
+              value: "http://userms:81/api"
+            - name: MicroServicesOptions__Loan
+              value: "http://loanms:82/api"
+            - name: MicroServicesOptions__Book
+              value: "http://bookms:80/api"
+            - name: ASPNETCORE_ENVIRONMENT
+              value: Release
             - name: ConnectionStrings__Local
               valueFrom:
                 secretKeyRef:
@@ -475,9 +494,32 @@ spec:
   type: LoadBalancer
   ports:
     - port: 80
-      targetPort: 80
+      targetPort: 8080
   selector:
     app: apigateway
+
+---
+
+# API Gateway Ingress (ADD THIS SECTION)
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: apigateway-ingress
+  namespace: cloudmare
+  annotations:
+    nginx.ingress.kubernetes.io/load-balance: round_robin
+spec:
+  ingressClassName: nginx
+  rules:
+    - http:
+        paths:
+          - backend:
+              service:
+                name: apigateway
+                port:
+                  number: 80
+            path: /
+            pathType: Prefix
 
 ---
 
@@ -497,10 +539,10 @@ data:
         kubernetes_sd_configs:
           - role: endpoints
         relabel_configs:
-          - source_labels: [__meta_kubernetes_service_label_app]
+          - source_labels: [ __meta_kubernetes_service_label_app ]
             regex: room|book|loan|user|apigateway
             action: keep
-          - source_labels: [__meta_kubernetes_service_label_app]
+          - source_labels: [ __meta_kubernetes_service_label_app ]
             target_label: app
 
 ---
