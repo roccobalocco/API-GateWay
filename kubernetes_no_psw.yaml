@@ -12,8 +12,7 @@ metadata:
   namespace: cloudmare
 type: Opaque
 stringData:
-  DefaultConnection: "Server=mssql;Database=Gateway;User=sa;Password=<password>"
-  Local: "Server=mssql;Database=Gateway;User=sa;Password=<password>"
+  Local: "Server=mssql;Database=Gateway;User Id=sa;Password=<Password>;Encrypt=False;TrustServerCertificate=True"
 
 ---
 
@@ -55,7 +54,19 @@ spec:
             - name: ACCEPT_EULA
               value: "Y"
             - name: SA_PASSWORD
-              value: "<password>"
+              value: "<Password>"
+          livenessProbe:
+            tcpSocket:
+              port: 1433
+            initialDelaySeconds: 10
+            periodSeconds: 15
+            failureThreshold: 3
+          readinessProbe:
+            tcpSocket:
+              port: 1433
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            failureThreshold: 3
           volumeMounts:
             - name: mssql-storage
               mountPath: /var/opt/mssql
@@ -87,6 +98,7 @@ metadata:
   name: bookms
   namespace: cloudmare
 spec:
+  replicas: 1
   selector:
     matchLabels:
       app: bookms
@@ -105,12 +117,26 @@ spec:
               cpu: 100m
             limits:
               cpu: 500m
+          livenessProbe:
+            httpGet:
+              path: /health/liveness
+              port: 8080
+            initialDelaySeconds: 10
+            periodSeconds: 15
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /health/readiness
+              port: 8080
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            failureThreshold: 3
           env:
             - name: ConnectionStrings__Local
               valueFrom:
                 secretKeyRef:
                   name: db-connection
-                  key: DefaultConnection
+                  key: Local
 
 ---
 
@@ -157,6 +183,7 @@ metadata:
   name: userms
   namespace: cloudmare
 spec:
+  replicas: 1
   selector:
     matchLabels:
       app: userms
@@ -175,12 +202,26 @@ spec:
               cpu: 100m
             limits:
               cpu: 500m
+          livenessProbe:
+            httpGet:
+              path: /health/liveness
+              port: 8080
+            initialDelaySeconds: 10
+            periodSeconds: 15
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /health/readiness
+              port: 8080
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            failureThreshold: 3
           env:
             - name: ConnectionStrings__Local
               valueFrom:
                 secretKeyRef:
                   name: db-connection
-                  key: DefaultConnection
+                  key: Local
 
 ---
 
@@ -227,6 +268,7 @@ metadata:
   name: loanms
   namespace: cloudmare
 spec:
+  replicas: 1
   selector:
     matchLabels:
       app: loanms
@@ -245,12 +287,26 @@ spec:
               cpu: 100m
             limits:
               cpu: 500m
+          livenessProbe:
+            httpGet:
+              path: /health/liveness
+              port: 8080
+            initialDelaySeconds: 10
+            periodSeconds: 15
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /health/readiness
+              port: 8080
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            failureThreshold: 3
           env:
             - name: ConnectionStrings__Local
               valueFrom:
                 secretKeyRef:
                   name: db-connection
-                  key: DefaultConnection
+                  key: Local
 
 ---
 
@@ -297,6 +353,7 @@ metadata:
   name: roomms
   namespace: cloudmare
 spec:
+  replicas: 1
   selector:
     matchLabels:
       app: roomms
@@ -315,12 +372,26 @@ spec:
               cpu: 100m
             limits:
               cpu: 500m
+          livenessProbe:
+            httpGet:
+              path: /health/liveness
+              port: 8080
+            initialDelaySeconds: 10
+            periodSeconds: 15
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /health/readiness
+              port: 8080
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            failureThreshold: 3
           env:
             - name: ConnectionStrings__Local
               valueFrom:
                 secretKeyRef:
                   name: db-connection
-                  key: DefaultConnection
+                  key: Local
 
 ---
 
@@ -367,6 +438,7 @@ metadata:
   name: apigateway
   namespace: cloudmare
 spec:
+  replicas: 1
   selector:
     matchLabels:
       app: apigateway
@@ -379,7 +451,7 @@ spec:
         - name: apigateway
           image: roccobalocco/api-gateway:latest
           ports:
-            - containerPort: 8080
+            - containerPort: 80
           resources:
             requests:
               cpu: 100m
@@ -390,15 +462,7 @@ spec:
               valueFrom:
                 secretKeyRef:
                   name: db-connection
-                  key: DefaultConnection
-            - name: MicroServicesOptions__Book
-              value: "http://bookms:80"
-            - name: MicroServicesOptions__User
-              value: "http://userms:81"
-            - name: MicroServicesOptions__Loan
-              value: "http://loanms:82"
-            - name: MicroServicesOptions__Room
-              value: "http://roomms:83"
+                  key: Local
 
 ---
 
@@ -408,30 +472,152 @@ metadata:
   name: apigateway
   namespace: cloudmare
 spec:
+  type: LoadBalancer
   ports:
-    - port: 84
-      targetPort: 8080
+    - port: 80
+      targetPort: 80
   selector:
     app: apigateway
 
 ---
 
-apiVersion: autoscaling/v2
-kind: HorizontalPodAutoscaler
+# Prometheus Deployment & Service
+
+apiVersion: v1
+kind: ConfigMap
 metadata:
-  name: apigateway-hpa
+  name: prometheus-config
+  namespace: cloudmare
+data:
+  prometheus.yml: |
+    global:
+      scrape_interval: 15s
+    scrape_configs:
+      - job_name: 'kubernetes-services'
+        kubernetes_sd_configs:
+          - role: endpoints
+        relabel_configs:
+          - source_labels: [__meta_kubernetes_service_label_app]
+            regex: room|book|loan|user|apigateway
+            action: keep
+          - source_labels: [__meta_kubernetes_service_label_app]
+            target_label: app
+
+---
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: prometheus
   namespace: cloudmare
 spec:
-  scaleTargetRef:
-    apiVersion: apps/v1
-    kind: Deployment
-    name: apigateway
-  minReplicas: 1
-  maxReplicas: 2
-  metrics:
-    - type: Resource
-      resource:
-        name: cpu
-        target:
-          type: Utilization
-          averageUtilization: 50
+  replicas: 1
+  selector:
+    matchLabels:
+      app: prometheus
+  template:
+    metadata:
+      labels:
+        app: prometheus
+    spec:
+      containers:
+        - name: prometheus
+          image: prom/prometheus:latest
+          args:
+            - "--config.file=/etc/prometheus/prometheus.yml"
+          ports:
+            - containerPort: 9090
+          volumeMounts:
+            - name: prometheus-config-volume
+              mountPath: /etc/prometheus/
+      volumes:
+        - name: prometheus-config-volume
+          configMap:
+            name: prometheus-config
+
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: prometheus
+  namespace: cloudmare
+spec:
+  ports:
+    - port: 9090
+      targetPort: 9090
+  selector:
+    app: prometheus
+
+---
+
+# Grafana Deployment, Service, ConfigMap (Datasource provisioning)
+
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: grafana-provisioning
+  namespace: cloudmare
+data:
+  datasources.yaml: |-
+    apiVersion: 1
+    datasources:
+      - name: Prometheus
+        type: prometheus
+        access: proxy
+        url: http://prometheus:9090
+        isDefault: true
+        editable: false
+
+---
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: grafana
+  namespace: cloudmare
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: grafana
+  template:
+    metadata:
+      labels:
+        app: grafana
+    spec:
+      containers:
+        - name: grafana
+          image: grafana/grafana:latest
+          ports:
+            - containerPort: 3000
+          env:
+            - name: GF_SECURITY_ADMIN_PASSWORD
+              value: "admin"
+            - name: GF_USERS_ALLOW_SIGN_UP
+              value: "false"
+            - name: GF_AUTH_ANONYMOUS_ENABLED
+              value: "true"
+            - name: GF_AUTH_ANONYMOUS_ORG_ROLE
+              value: "Viewer"
+          volumeMounts:
+            - name: grafana-provisioning
+              mountPath: /etc/grafana/provisioning
+      volumes:
+        - name: grafana-provisioning
+          configMap:
+            name: grafana-provisioning
+
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: grafana
+  namespace: cloudmare
+spec:
+  ports:
+    - port: 3000
+      targetPort: 3000
+  selector:
+    app: grafana
