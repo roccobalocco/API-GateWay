@@ -8,9 +8,18 @@ using NLog.Config;
 using Microsoft.EntityFrameworkCore;
 
 var config = new LoggingConfiguration();
-var ftarget = new FileTarget();
-ftarget.FileName = "${basedir}/output.log";
-config.AddTarget("file", ftarget);
+
+var ftarget = new FileTarget("file")
+{
+    FileName = "/app/output.log",  // path assoluto, assicurati esista e permessi
+    Layout = "${longdate} ${level} ${message} ${exception}"
+};
+
+config.AddTarget(ftarget);
+config.AddRuleForAllLevels(ftarget);
+
+NLog.LogManager.Configuration = config;
+
 
 var builder = WebApplication.CreateBuilder(args);
 
