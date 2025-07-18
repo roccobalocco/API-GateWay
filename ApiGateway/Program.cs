@@ -17,7 +17,7 @@ var config = new LoggingConfiguration();
 
 var ftarget = new FileTarget("file")
 {
-    FileName = "/app/output.log",  // path assoluto, assicurati esista e permessi
+    FileName = "/app/output.log", // path assoluto, assicurati esista e permessi
     Layout = "${longdate} ${level} ${message} ${exception}"
 };
 
@@ -49,8 +49,9 @@ builder.Services.AddSwaggerGen(c =>
         Description = "Insert the JWT in the following format: Bearer {token}",
         Name = "Authorization",
         In = ParameterLocation.Header,
-        Type = SecuritySchemeType.ApiKey,
-        Scheme = "Bearer"
+        Type = SecuritySchemeType.Http,
+        Scheme = "bearer",
+        BearerFormat = "JWT" 
     });
 
     c.AddSecurityRequirement(new OpenApiSecurityRequirement
@@ -77,69 +78,57 @@ builder.Services.AddDbContext<GatewayContext>(options =>
 
 // ➕ FAULT TOLERANCE PER SERVICE USING NAMED HTTP CLIENTS
 
-builder.Services.AddHttpClient("RoomClient", client =>
-{
-    client.Timeout = TimeSpan.FromSeconds(5);
-})
-.AddPolicyHandler(Policy.BulkheadAsync<HttpResponseMessage>(10, 20))
-.AddStandardResilienceHandler(options =>
-{
-    options.Retry.MaxRetryAttempts = 3;
-    options.Retry.BackoffType = DelayBackoffType.Exponential;
-    options.Retry.MaxDelay = TimeSpan.FromSeconds(2);
-    options.CircuitBreaker.FailureRatio = 0.5;
-    options.CircuitBreaker.MinimumThroughput = 10;
-    options.CircuitBreaker.SamplingDuration = TimeSpan.FromSeconds(30);
-    options.CircuitBreaker.BreakDuration = TimeSpan.FromSeconds(20);
-});
+builder.Services.AddHttpClient("RoomClient", client => { client.Timeout = TimeSpan.FromSeconds(5); })
+    .AddPolicyHandler(Policy.BulkheadAsync<HttpResponseMessage>(10, 20))
+    .AddStandardResilienceHandler(options =>
+    {
+        options.Retry.MaxRetryAttempts = 3;
+        options.Retry.BackoffType = DelayBackoffType.Exponential;
+        options.Retry.MaxDelay = TimeSpan.FromSeconds(2);
+        options.CircuitBreaker.FailureRatio = 0.5;
+        options.CircuitBreaker.MinimumThroughput = 10;
+        options.CircuitBreaker.SamplingDuration = TimeSpan.FromSeconds(30);
+        options.CircuitBreaker.BreakDuration = TimeSpan.FromSeconds(20);
+    });
 
-builder.Services.AddHttpClient("BookClient", client =>
-{
-    client.Timeout = TimeSpan.FromSeconds(5);
-})
-.AddPolicyHandler(Policy.BulkheadAsync<HttpResponseMessage>(8, 15))
-.AddStandardResilienceHandler(options =>
-{
-    options.Retry.MaxRetryAttempts = 4;
-    options.Retry.BackoffType = DelayBackoffType.Exponential;
-    options.Retry.MaxDelay = TimeSpan.FromSeconds(2);
-    options.CircuitBreaker.FailureRatio = 0.4;
-    options.CircuitBreaker.MinimumThroughput = 12;
-    options.CircuitBreaker.SamplingDuration = TimeSpan.FromSeconds(30);
-    options.CircuitBreaker.BreakDuration = TimeSpan.FromSeconds(25);
-});
+builder.Services.AddHttpClient("BookClient", client => { client.Timeout = TimeSpan.FromSeconds(5); })
+    .AddPolicyHandler(Policy.BulkheadAsync<HttpResponseMessage>(8, 15))
+    .AddStandardResilienceHandler(options =>
+    {
+        options.Retry.MaxRetryAttempts = 4;
+        options.Retry.BackoffType = DelayBackoffType.Exponential;
+        options.Retry.MaxDelay = TimeSpan.FromSeconds(2);
+        options.CircuitBreaker.FailureRatio = 0.4;
+        options.CircuitBreaker.MinimumThroughput = 12;
+        options.CircuitBreaker.SamplingDuration = TimeSpan.FromSeconds(30);
+        options.CircuitBreaker.BreakDuration = TimeSpan.FromSeconds(25);
+    });
 
-builder.Services.AddHttpClient("LoanClient", client =>
-{
-    client.Timeout = TimeSpan.FromSeconds(5);
-})
-.AddPolicyHandler(Policy.BulkheadAsync<HttpResponseMessage>(6, 10))
-.AddStandardResilienceHandler(options =>
-{
-    options.Retry.MaxRetryAttempts = 3;
-    options.Retry.BackoffType = DelayBackoffType.Exponential;
-    options.Retry.MaxDelay = TimeSpan.FromSeconds(3);
-    options.CircuitBreaker.FailureRatio = 0.6;
-    options.CircuitBreaker.MinimumThroughput = 8;
-    options.CircuitBreaker.SamplingDuration = TimeSpan.FromSeconds(40);
-    options.CircuitBreaker.BreakDuration = TimeSpan.FromSeconds(30);
-});
+builder.Services.AddHttpClient("LoanClient", client => { client.Timeout = TimeSpan.FromSeconds(5); })
+    .AddPolicyHandler(Policy.BulkheadAsync<HttpResponseMessage>(6, 10))
+    .AddStandardResilienceHandler(options =>
+    {
+        options.Retry.MaxRetryAttempts = 3;
+        options.Retry.BackoffType = DelayBackoffType.Exponential;
+        options.Retry.MaxDelay = TimeSpan.FromSeconds(3);
+        options.CircuitBreaker.FailureRatio = 0.6;
+        options.CircuitBreaker.MinimumThroughput = 8;
+        options.CircuitBreaker.SamplingDuration = TimeSpan.FromSeconds(40);
+        options.CircuitBreaker.BreakDuration = TimeSpan.FromSeconds(30);
+    });
 
-builder.Services.AddHttpClient("UserClient", client =>
-{
-    client.Timeout = TimeSpan.FromSeconds(5);
-})
-.AddPolicyHandler(Policy.BulkheadAsync<HttpResponseMessage>(10, 20))
-.AddStandardResilienceHandler(options =>
-{
-    options.Retry.MaxRetryAttempts = 5;
-    options.Retry.BackoffType = DelayBackoffType.Exponential;
-    options.Retry.MaxDelay = TimeSpan.FromSeconds(1);
-    options.CircuitBreaker.FailureRatio = 0.75;
-    options.CircuitBreaker.MinimumThroughput = 10;
-    options.CircuitBreaker.SamplingDuration = TimeSpan.FromSeconds(60);
-    options.CircuitBreaker.BreakDuration = TimeSpan.FromSeconds(30);
-});
+builder.Services.AddHttpClient("UserClient", client => { client.Timeout = TimeSpan.FromSeconds(5); })
+    .AddPolicyHandler(Policy.BulkheadAsync<HttpResponseMessage>(10, 20))
+    .AddStandardResilienceHandler(options =>
+    {
+        options.Retry.MaxRetryAttempts = 5;
+        options.Retry.BackoffType = DelayBackoffType.Exponential;
+        options.Retry.MaxDelay = TimeSpan.FromSeconds(1);
+        options.CircuitBreaker.FailureRatio = 0.75;
+        options.CircuitBreaker.MinimumThroughput = 10;
+        options.CircuitBreaker.SamplingDuration = TimeSpan.FromSeconds(60);
+        options.CircuitBreaker.BreakDuration = TimeSpan.FromSeconds(30);
+    });
 
 // ➕ RATE LIMITING (.NET 8)
 builder.Services.AddRateLimiter(options =>
@@ -218,8 +207,14 @@ using (var scope = app.Services.CreateScope())
 // For project purpose I find useful to have access at the swagger
 // if (app.Environment.IsDevelopment())
 // {
+app.UseStaticFiles(); // Place before UseSwaggerUI
 app.UseSwagger();
-app.UseSwaggerUI();
+app.UseSwaggerUI(c =>
+{
+    c.SwaggerEndpoint("/swagger/v1/swagger.json", "API Gateway v1");
+    c.RoutePrefix = "swagger";
+});
+
 // }
 
 app.UseHttpsRedirection();
