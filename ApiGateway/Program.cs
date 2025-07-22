@@ -79,55 +79,55 @@ builder.Services.AddDbContext<GatewayContext>(options =>
 // ➕ FAULT TOLERANCE PER SERVICE USING NAMED HTTP CLIENTS
 
 builder.Services.AddHttpClient("RoomClient", client => { client.Timeout = TimeSpan.FromSeconds(5); })
-    .AddPolicyHandler(Policy.BulkheadAsync<HttpResponseMessage>(10, 20))
-    .AddStandardResilienceHandler(options =>
-    {
-        options.Retry.MaxRetryAttempts = 3;
-        options.Retry.BackoffType = DelayBackoffType.Exponential;
-        options.Retry.MaxDelay = TimeSpan.FromSeconds(2);
-        options.CircuitBreaker.FailureRatio = 0.5;
-        options.CircuitBreaker.MinimumThroughput = 10;
-        options.CircuitBreaker.SamplingDuration = TimeSpan.FromSeconds(30);
-        options.CircuitBreaker.BreakDuration = TimeSpan.FromSeconds(20);
-    });
-
-builder.Services.AddHttpClient("BookClient", client => { client.Timeout = TimeSpan.FromSeconds(5); })
-    .AddPolicyHandler(Policy.BulkheadAsync<HttpResponseMessage>(8, 15))
-    .AddStandardResilienceHandler(options =>
-    {
-        options.Retry.MaxRetryAttempts = 4;
-        options.Retry.BackoffType = DelayBackoffType.Exponential;
-        options.Retry.MaxDelay = TimeSpan.FromSeconds(2);
-        options.CircuitBreaker.FailureRatio = 0.4;
-        options.CircuitBreaker.MinimumThroughput = 12;
-        options.CircuitBreaker.SamplingDuration = TimeSpan.FromSeconds(30);
-        options.CircuitBreaker.BreakDuration = TimeSpan.FromSeconds(25);
-    });
-
-builder.Services.AddHttpClient("LoanClient", client => { client.Timeout = TimeSpan.FromSeconds(5); })
-    .AddPolicyHandler(Policy.BulkheadAsync<HttpResponseMessage>(6, 10))
-    .AddStandardResilienceHandler(options =>
-    {
-        options.Retry.MaxRetryAttempts = 3;
-        options.Retry.BackoffType = DelayBackoffType.Exponential;
-        options.Retry.MaxDelay = TimeSpan.FromSeconds(3);
-        options.CircuitBreaker.FailureRatio = 0.6;
-        options.CircuitBreaker.MinimumThroughput = 8;
-        options.CircuitBreaker.SamplingDuration = TimeSpan.FromSeconds(40);
-        options.CircuitBreaker.BreakDuration = TimeSpan.FromSeconds(30);
-    });
-
-builder.Services.AddHttpClient("UserClient", client => { client.Timeout = TimeSpan.FromSeconds(5); })
-    .AddPolicyHandler(Policy.BulkheadAsync<HttpResponseMessage>(10, 20))
+    .AddPolicyHandler(Policy.BulkheadAsync<HttpResponseMessage>(20, 50))
     .AddStandardResilienceHandler(options =>
     {
         options.Retry.MaxRetryAttempts = 5;
         options.Retry.BackoffType = DelayBackoffType.Exponential;
-        options.Retry.MaxDelay = TimeSpan.FromSeconds(1);
-        options.CircuitBreaker.FailureRatio = 0.75;
-        options.CircuitBreaker.MinimumThroughput = 10;
-        options.CircuitBreaker.SamplingDuration = TimeSpan.FromSeconds(60);
-        options.CircuitBreaker.BreakDuration = TimeSpan.FromSeconds(30);
+        options.Retry.MaxDelay = TimeSpan.FromSeconds(2.5);
+        options.CircuitBreaker.FailureRatio = 0.05;
+        options.CircuitBreaker.MinimumThroughput = 75;
+        options.CircuitBreaker.SamplingDuration = TimeSpan.FromSeconds(35);
+        options.CircuitBreaker.BreakDuration = TimeSpan.FromSeconds(6);
+    });
+
+builder.Services.AddHttpClient("BookClient", client => { client.Timeout = TimeSpan.FromSeconds(5); })
+    .AddPolicyHandler(Policy.BulkheadAsync<HttpResponseMessage>(20, 50))
+    .AddStandardResilienceHandler(options =>
+    {
+        options.Retry.MaxRetryAttempts = 5;
+        options.Retry.BackoffType = DelayBackoffType.Exponential;
+        options.Retry.MaxDelay = TimeSpan.FromSeconds(2.5);
+        options.CircuitBreaker.FailureRatio = 0.05;
+        options.CircuitBreaker.MinimumThroughput = 75;
+        options.CircuitBreaker.SamplingDuration = TimeSpan.FromSeconds(35);
+        options.CircuitBreaker.BreakDuration = TimeSpan.FromSeconds(6);
+    });
+
+builder.Services.AddHttpClient("LoanClient", client => { client.Timeout = TimeSpan.FromSeconds(5); })
+    .AddPolicyHandler(Policy.BulkheadAsync<HttpResponseMessage>(20, 50))
+    .AddStandardResilienceHandler(options =>
+    {
+        options.Retry.MaxRetryAttempts = 5;
+        options.Retry.BackoffType = DelayBackoffType.Exponential;
+        options.Retry.MaxDelay = TimeSpan.FromSeconds(2.5);
+        options.CircuitBreaker.FailureRatio = 0.05;
+        options.CircuitBreaker.MinimumThroughput = 75;
+        options.CircuitBreaker.SamplingDuration = TimeSpan.FromSeconds(35);
+        options.CircuitBreaker.BreakDuration = TimeSpan.FromSeconds(6);
+    });
+
+builder.Services.AddHttpClient("UserClient", client => { client.Timeout = TimeSpan.FromSeconds(5); })
+    .AddPolicyHandler(Policy.BulkheadAsync<HttpResponseMessage>(20, 50))
+    .AddStandardResilienceHandler(options =>
+    {
+        options.Retry.MaxRetryAttempts = 5;
+        options.Retry.BackoffType = DelayBackoffType.Exponential;
+        options.Retry.MaxDelay = TimeSpan.FromSeconds(2.5);
+        options.CircuitBreaker.FailureRatio = 0.05;
+        options.CircuitBreaker.MinimumThroughput = 75;
+        options.CircuitBreaker.SamplingDuration = TimeSpan.FromSeconds(35);
+        options.CircuitBreaker.BreakDuration = TimeSpan.FromSeconds(6);
     });
 
 // ➕ RATE LIMITING (.NET 8)
@@ -150,7 +150,7 @@ builder.Services.AddRateLimiter(options =>
     {
         opt.PermitLimit = 800;
         opt.Window = TimeSpan.FromMinutes(1);
-        opt.QueueLimit = 50;
+        opt.QueueLimit = 225;
         opt.QueueProcessingOrder = QueueProcessingOrder.OldestFirst;
     });
 
@@ -161,9 +161,9 @@ builder.Services.AddRateLimiter(options =>
         return RateLimitPartition.GetFixedWindowLimiter(ip, _ =>
             new FixedWindowRateLimiterOptions
             {
-                PermitLimit = 60,
+                PermitLimit = 400,
                 Window = TimeSpan.FromMinutes(1),
-                QueueLimit = 4,
+                QueueLimit = 100,
                 QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
                 AutoReplenishment = true
             });

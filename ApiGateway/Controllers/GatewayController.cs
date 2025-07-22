@@ -254,7 +254,7 @@ public class GatewayController(
     [Authorize(Roles = "Admin")]
     public async Task<IActionResult> GetHealthSummary()
     {
-        var results = new Dictionary<string, string>();
+        var results = new Dictionary<string, bool>();
 
         foreach (var serviceName in new[] { "Room", "Book", "Loan", "User" })
         {
@@ -266,11 +266,11 @@ public class GatewayController(
                 var client = CreateClientForService(serviceName);
                 var res = await client.GetAsync($"{baseUrl}/health/readiness");
 
-                results[serviceName] = res.IsSuccessStatusCode ? "Ready" : "Not Ready";
+                results[serviceName] = res.IsSuccessStatusCode;
             }
             catch (Exception)
             {
-                results[serviceName] = "Unavailable";
+                results[serviceName] = false;
             }
         }
 
