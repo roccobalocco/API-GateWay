@@ -3,11 +3,6 @@
 */obj
 kubernetes.yaml
 *.out
-*/node_modules
-*/.vscode
-*/package-lock.json
-
-# See https://docs.github.com/get-started/getting-started-with-git/ignoring-files for more about ignoring files.
 
 # Compiled output
 /dist
@@ -49,3 +44,6 @@ testem.log
 # System files
 .DS_Store
 Thumbs.db
+
+stresstestfe/package-lock.json
+stresstestfe/node_modules

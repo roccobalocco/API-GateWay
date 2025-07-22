@@ -1,0 +1,258 @@
+<div class="dashboard-container">
+  <header class="dashboard-header">
+    <h1>Kubernetes Dashboard & Load Tester</h1>
+    @if (isAuthenticated) {
+      <div class="auth-status">
+        <span class="status-badge success">🟢 Autenticato</span>
+      </div>
+    }
+  </header>
+
+  <!-- Login Section -->
+  @if (!isAuthenticated) {
+    <div class="login-section">
+      <div class="card">
+        <h2>🔐 Login</h2>
+        <form (ngSubmit)="login()" class="login-form">
+          <div class="form-group">
+            <label for="username">Username:</label>
+            <input
+              id="username"
+              type="text"
+              [(ngModel)]="credentials.username"
+              name="username"
+              required
+              class="form-control"
+            >
+          </div>
+          <div class="form-group">
+            <label for="password">Password:</label>
+            <input
+              id="password"
+              type="password"
+              [(ngModel)]="credentials.password"
+              name="password"
+              required
+              class="form-control"
+            >
+          </div>
+          <button type="submit" class="btn btn-primary" [disabled]="isLoading">
+            {{ isLoading ? 'Accesso...' : 'Login' }}
+          </button>
+        </form>
+      </div>
+    </div>
+  } @else {
+    <!-- Main Dashboard -->
+    <div class="main-dashboard">
+      <!-- Health Status Section -->
+      <div class="health-section">
+        <div class="card">
+          <h2>📊 Stato di Salute del Sistema</h2>
+          <div class="health-controls">
+            <button (click)="refreshHealth()" class="btn btn-secondary" [disabled]="isLoading">
+              🔄 Aggiorna
+            </button>
+            <label class="auto-refresh">
+              <input
+                type="checkbox"
+                [(ngModel)]="autoRefresh"
+                (change)="toggleAutoRefresh()"
+              >
+              Auto-refresh (30s)
+            </label>
+          </div>
+
+          <div class="health-grid">
+            <div class="health-card">
+              <h3>Health Summary</h3>
+              @if (healthSummary) {
+                <div class="health-info">
+                  <div class="status-indicator" [class]="getStatusClass(healthSummary.status)">
+                    {{ healthSummary.status }}
+                  </div>
+                  <p>Durata: {{ healthSummary.totalDuration }}</p>
+                  <p>Controlli: {{ healthSummary.checks?.length || 0 }}</p>
+                </div>
+              }
+              @if (!healthSummary && !isLoading) {
+                <div class="no-data">
+                  Nessun dato disponibile
+                </div>
+              }
+            </div>
+
+            <div class="health-card">
+              <h3>Statistiche</h3>
+              @if (stats) {
+                <div class="stats-info">
+                  <div class="stat-item">
+                    <span class="stat-label">Uptime:</span>
+                    <span class="stat-value">{{ formatUptime(stats.uptime) }}</span>
+                  </div>
+                  <div class="stat-item">
+                    <span class="stat-label">CPU:</span>
+                    <span class="stat-value">{{ stats.cpuUsage }}%</span>
+                  </div>
+                  <div class="stat-item">
+                    <span class="stat-label">Memory:</span>
+                    <span class="stat-value">{{ stats.memoryUsage }}%</span>
+                  </div>
+                  <div class="stat-item">
+                    <span class="stat-label">Requests:</span>
+                    <span class="stat-value">{{ stats.requestCount }}</span>
+                  </div>
+                  <div class="stat-item">
+                    <span class="stat-label">Error Rate:</span>
+                    <span class="stat-value">{{ stats.errorRate }}%</span>
+                  </div>
+                </div>
+              }
+              @if (!stats && !isLoading) {
+                <div class="no-data">
+                  Nessun dato disponibile
+                </div>
+              }
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Load Testing Section -->
+      <div class="load-test-section">
+        <div class="card">
+          <h2>🚀 Test di Resistenza Kubernetes</h2>
+          <div class="test-config">
+            <h3>Configurazione Test</h3>
+            <div class="config-grid">
+              <div class="form-group">
+                <label for="endpoint">Endpoint:</label>
+                <select
+                  id="endpoint"
+                  [(ngModel)]="loadTestConfig.endpoint"
+                  class="form-control"
+                >
+                  <option value="Book">Book Service</option>
+                  <option value="User">User Service</option>
+                  <option value="Room">Room Service</option>
+                  <option value="Loan">Loan Service</option>
+                </select>
+              </div>
+
+              <div class="form-group">
+                <label for="method">Metodo:</label>
+                <select
+                  id="method"
+                  [(ngModel)]="loadTestConfig.method"
+                  class="form-control"
+                >
+                  <option value="GET">GET</option>
+                  <option value="POST">POST</option>
+                  <option value="PUT">PUT</option>
+                  <option value="DELETE">DELETE</option>
+                </select>
+              </div>
+
+              <div class="form-group">
+                <label for="requests">Numero Richieste:</label>
+                <input
+                  id="requests"
+                  type="number"
+                  [(ngModel)]="loadTestConfig.requests"
+                  min="1"
+                  max="10000"
+                  class="form-control"
+                >
+              </div>
+
+              <div class="form-group">
+                <label for="concurrency">Concorrenza:</label>
+                <input
+                  id="concurrency"
+                  type="number"
+                  [(ngModel)]="loadTestConfig.concurrency"
+                  min="1"
+                  max="100"
+                  class="form-control"
+                >
+              </div>
+
+              <div class="form-group">
+                <label for="duration">Durata (secondi):</label>
+                <input
+                  id="duration"
+                  type="number"
+                  [(ngModel)]="loadTestConfig.duration"
+                  min="1"
+                  max="3600"
+                  class="form-control"
+                >
+              </div>
+            </div>
+
+            <div class="test-actions">
+              <button
+                (click)="startLoadTest()"
+                class="btn btn-primary"
+                [disabled]="isLoadTesting"
+              >
+                {{ isLoadTesting ? 'Test in corso...' : 'Avvia Test' }}
+              </button>
+              <button
+                (click)="stopLoadTest()"
+                class="btn btn-danger"
+                [disabled]="!isLoadTesting"
+              >
+                Ferma Test
+              </button>
+            </div>
+          </div>
+
+          <!-- Test Results -->
+          @if (loadTestResults.length > 0) {
+            <div class="test-results">
+              <h3>Risultati Test</h3>
+              <div class="results-grid">
+                @for (result of loadTestResults; track $index) {
+                  <div class="result-card">
+                    <h4>Test {{ $index + 1 }}</h4>
+                    <div class="result-stats">
+                    <span class="result-item">
+                      <strong>Endpoint:</strong> {{ result.endpoint }}
+                    </span>
+                      <span class="result-item">
+                      <strong>Richieste:</strong> {{ result.totalRequests }}
+                    </span>
+                      <span class="result-item">
+                      <strong>Successi:</strong> {{ result.successRequests }}
+                    </span>
+                      <span class="result-item">
+                      <strong>Errori:</strong> {{ result.errorRequests }}
+                    </span>
+                      <span class="result-item">
+                      <strong>Tempo medio:</strong> {{ result.averageTime }}ms
+                    </span>
+                      <span class="result-item">
+                      <strong>Successo:</strong> {{ result.successRate }}%
+                    </span>
+                    </div>
+                  </div>
+                }
+              </div>
+            </div>
+          }
+        </div>
+      </div>
+
+      <!-- Progress Bar -->
+      @if (isLoadTesting) {
+        <div class="progress-section">
+          <div class="progress-bar">
+            <div class="progress-fill" [style.width.%]="testProgress"></div>
+          </div>
+          <p class="progress-text">Test in corso: {{ testProgress }}%</p>
+        </div>
+      }
+    </div>
+  }
+</div>
