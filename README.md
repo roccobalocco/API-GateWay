@@ -48,3 +48,101 @@ For each topic we have a microservice, and the main desk orchestrates the usage 
 
 - *minikube service prometheus -n cloudmare --url* to get Prometheus service URL
 - *minikube service grafana -n cloudmare --url* to get Grafana service URL
+
+## Actual Limits of ApiGateway
+
+The API Gateway applies both resilience policies for service-to-service communication and rate limiting policies for incoming client requests.
+
+### Resilience Policies (Service Fault Tolerance)
+
+For each microservice the dev can set custom limits, but the standard ones are:
+```csharp
+options.Retry.MaxRetryAttempts = 5;
+options.Retry.BackoffType = DelayBackoffType.Exponential;
+options.Retry.MaxDelay = TimeSpan.FromSeconds(2.5);
+options.CircuitBreaker.FailureRatio = 0.05;
+options.CircuitBreaker.MinimumThroughput = 75;
+options.CircuitBreaker.SamplingDuration = TimeSpan.FromSeconds(35);
+options.CircuitBreaker.BreakDuration = TimeSpan.FromSeconds(6);
+```
+
+These settings define:
+- **Retry logic**: Up to 5 attempts with exponential backoff, max 2.5 seconds between retries.
+- **Circuit breaker**: Opens the circuit when 5% of requests fail within a sample of at least 75 requests in 35 seconds, breaking for 6 seconds.
+
+A bulkhead policy is also applied:
+```csharp
+Policy.BulkheadAsync<HttpResponseMessage>(20, 50)
+```
+
+### Rate Limiting Policies (Client Throttling)
+
+The API Gateway uses .NET 8's rate limiting middleware to control client-side request traffic.
+
+`PerIpLimiter` Policy applies rate limiting per IP address:
+- Permit Limit: 400 requests per minute
+- Queue Limit: 100 requests
+- Queue Order: Oldest requests first
+```csharp
+RateLimitPartition.GetFixedWindowLimiter(ip, _ =>
+  new FixedWindowRateLimiterOptions
+  {
+    PermitLimit = 400,
+    Window = TimeSpan.FromMinutes(1),
+    QueueLimit = 100,
+    QueueProcessingOrder = QueueProcessingOrder.OldestFirst
+  });
+```
+`FixedPolicy` Policy applies a global fixed window limit:
+- Permit Limit: 800 requests per minute
+- Queue Limit: 225 requests
+- Queue Order: Oldest-first
+```csharp
+options.AddFixedWindowLimiter("FixedPolicy", opt =>
+  {
+    opt.PermitLimit = 800;
+    opt.Window = TimeSpan.FromMinutes(1);
+    opt.QueueLimit = 225;
+    opt.QueueProcessingOrder = QueueProcessingOrder.OldestFirst;
+  });
+```
+These policies are applied globally to all controllers via:
+```csharp
+app.MapControllers()
+  .RequireRateLimiting("FixedPolicy")
+  .RequireRateLimiting("PerIpLimiter");\
+```
+
+## JWT Authentication
+
+The API Gateway uses JWT (JSON Web Token) authentication with settings loaded from the `JWTOptions` section in configuration. The token is validated with the following rules:
+
+```csharp
+options.TokenValidationParameters = new TokenValidationParameters
+{
+    ValidateIssuer = true,
+    ValidIssuer = jwtOptions.Issuer,
+    ValidateAudience = true,
+    ValidAudience = jwtOptions.Audience,
+    ValidateLifetime = true,
+    ValidateIssuerSigningKey = true,
+    IssuerSigningKey = new SymmetricSecurityKey(key)
+};
+```
+
+These ensure:
+- The token was issued by a trusted issuer
+- The token is intended for the configured audience
+- The expiration and not before times are respected
+- The signature is verified using a symmetric key
+
+## Health Checks
+The API Gateway exposes two endpoints for health monitoring using the built-in health checks:
+- **Liveness Probe**: Checks whether the application is alive (process up and responding)
+- **Readiness Probe**: Checks whether the application is ready to serve traffic (e.g., DB migrations done)
+
+They are mapped as:
+```csharp
+app.MapHealthChecks("/health/liveness", new HealthCheckOptions { Predicate = _ => false });
+app.MapHealthChecks("/health/readiness", new HealthCheckOptions { Predicate = _ => true });
+```

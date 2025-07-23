@@ -261,7 +261,7 @@ public class GatewayController(
             try
             {
                 var baseUrl = _services.GetType().GetProperty(serviceName)!
-                    .GetValue(_services)?.ToString();
+                    .GetValue(_services)?.ToString().Replace("/api", "");
 
                 var client = CreateClientForService(serviceName);
                 var res = await client.GetAsync($"{baseUrl}/health/readiness");
