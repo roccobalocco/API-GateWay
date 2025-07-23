@@ -6,6 +6,7 @@ using UserMS.Repository;
 using Utility.Interface;
 using NLog.Targets;
 using NLog.Config;
+using Prometheus;
 
 var config = new LoggingConfiguration();
 
@@ -43,6 +44,8 @@ builder.Services.AddHealthChecks();
 
 var app = builder.Build();
 
+app.UseHttpMetrics();
+
 app.MapHealthChecks("/health/liveness", new HealthCheckOptions
 {
     Predicate = _ => false // solo verifica che l'app sia attiva
@@ -70,6 +73,8 @@ if (app.Environment.IsDevelopment())
 app.UseHttpsRedirection();
 
 app.UseAuthorization();
+
+app.MapMetrics();
 
 app.MapControllers();
 

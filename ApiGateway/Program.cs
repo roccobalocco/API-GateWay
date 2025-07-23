@@ -12,6 +12,7 @@ using Microsoft.OpenApi.Models;
 using Microsoft.AspNetCore.RateLimiting;
 using System.Threading.RateLimiting;
 using ApiGateway.Services;
+using Prometheus;
 
 var config = new LoggingConfiguration();
 
@@ -195,6 +196,7 @@ builder.Services.AddSingleton<MetricsService>();
 
 var app = builder.Build();
 
+app.UseHttpMetrics();
 app.MapHealthChecks("/health/liveness", new HealthCheckOptions { Predicate = _ => false });
 app.MapHealthChecks("/health/readiness", new HealthCheckOptions { Predicate = _ => true });
 
@@ -223,6 +225,8 @@ app.UseRateLimiter();
 
 app.UseAuthentication();
 app.UseAuthorization();
+
+app.MapMetrics();
 
 app.MapControllers()
     .RequireRateLimiting("FixedPolicy")
