@@ -1,7 +1,6 @@
 */appsettings.*.json
 */bin
 */obj
-kubernetes.yaml
 *.out
 
 # Compiled output

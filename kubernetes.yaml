@@ -12,7 +12,7 @@ metadata:
   namespace: cloudmare
 type: Opaque
 stringData:
-  Local: "Server=mssql;Database=Gateway;User Id=sa;Password=<Password>;Encrypt=False;TrustServerCertificate=True"
+  Local: "Server=mssql;Database=Gateway;User Id=sa;Password=Cloudness1!;Encrypt=False;TrustServerCertificate=True"
 
 ---
 apiVersion: v1
@@ -55,7 +55,7 @@ spec:
             - name: ACCEPT_EULA
               value: "Y"
             - name: SA_PASSWORD
-              value: "<Password>"
+              value: "Cloudness1!"
             - name: MSSQL_PID
               value: "Express"
           resources:
@@ -154,6 +154,10 @@ kind: Service
 metadata:
   name: bookms
   namespace: cloudmare
+  annotations:
+    prometheus.io/scrape: "true"
+    prometheus.io/path: "/metrics"
+    prometheus.io/port: "8080"
 spec:
   ports:
     - port: 80
@@ -239,6 +243,10 @@ kind: Service
 metadata:
   name: userms
   namespace: cloudmare
+  annotations:
+    prometheus.io/scrape: "true"
+    prometheus.io/path: "/metrics"
+    prometheus.io/port: "8080"
 spec:
   ports:
     - port: 81
@@ -324,6 +332,10 @@ kind: Service
 metadata:
   name: loanms
   namespace: cloudmare
+  annotations:
+    prometheus.io/scrape: "true"
+    prometheus.io/path: "/metrics"
+    prometheus.io/port: "8080"
 spec:
   ports:
     - port: 82
@@ -409,6 +421,10 @@ kind: Service
 metadata:
   name: roomms
   namespace: cloudmare
+  annotations:
+    prometheus.io/scrape: "true"
+    prometheus.io/path: "/metrics"
+    prometheus.io/port: "8080"
 spec:
   ports:
     - port: 83
@@ -490,6 +506,10 @@ kind: Service
 metadata:
   name: apigateway
   namespace: cloudmare
+  annotations:
+    prometheus.io/scrape: "true"
+    prometheus.io/path: "/metrics"
+    prometheus.io/port: "8080"
 spec:
   type: LoadBalancer
   ports:
@@ -507,6 +527,11 @@ metadata:
   name: apigateway-ingress
   namespace: cloudmare
   annotations:
+    nginx.ingress.kubernetes.io/enable-cors: "true"
+    nginx.ingress.kubernetes.io/cors-allow-origin: "http://localhost:4200"
+    nginx.ingress.kubernetes.io/cors-allow-methods: "GET, POST, PUT, DELETE, OPTIONS"
+    nginx.ingress.kubernetes.io/cors-allow-headers: "Authorization, Content-Type"
+    nginx.ingress.kubernetes.io/cors-allow-credentials: "true"  # se usi cookie o auth basata su credenziali
     nginx.ingress.kubernetes.io/load-balance: round_robin
 spec:
   ingressClassName: nginx
@@ -533,17 +558,25 @@ metadata:
 data:
   prometheus.yml: |
     global:
-      scrape_interval: 15s
+    scrape_interval: 15s
+
     scrape_configs:
-      - job_name: 'kubernetes-services'
+    - job_name: 'kubernetes-annotated-services'
         kubernetes_sd_configs:
-          - role: endpoints
+        - role: endpoints
         relabel_configs:
-          - source_labels: [ __meta_kubernetes_service_label_app ]
-            regex: room|book|loan|user|apigateway
+        - source_labels: [__meta_kubernetes_service_annotation_prometheus_io_scrape]
             action: keep
-          - source_labels: [ __meta_kubernetes_service_label_app ]
-            target_label: app
+            regex: true
+        - source_labels: [__meta_kubernetes_service_annotation_prometheus_io_path]
+            action: replace
+            target_label: __metrics_path__
+            regex: (.+)
+        - source_labels: [__address__, __meta_kubernetes_service_annotation_prometheus_io_port]
+            action: replace
+            regex: (.+):(?:\d+);(\d+)
+            replacement: $1:$2
+            target_label: __address__
 
 ---
 
@@ -584,6 +617,10 @@ kind: Service
 metadata:
   name: prometheus
   namespace: cloudmare
+  annotations:
+    prometheus.io/scrape: "true"
+    prometheus.io/path: "/metrics"
+    prometheus.io/port: "8080"
 spec:
   ports:
     - port: 9090
@@ -657,6 +694,10 @@ kind: Service
 metadata:
   name: grafana
   namespace: cloudmare
+  annotations:
+    prometheus.io/scrape: "true"
+    prometheus.io/path: "/metrics"
+    prometheus.io/port: "8080"
 spec:
   ports:
     - port: 3000
