@@ -47,3 +47,10 @@ Thumbs.db
 stresstestfe/package-lock.json
 stresstestfe/node_modules
 stresstestfe/.angular
+
+*/.terraform/
+*.hcl
+*.tfstate
+*.backup
+*.info
+ììkubectl

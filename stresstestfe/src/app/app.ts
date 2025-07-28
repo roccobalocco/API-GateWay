@@ -3,11 +3,12 @@ import {CommonModule} from '@angular/common';
 import {FormsModule} from '@angular/forms';
 import {HttpClient, HttpHeaders} from '@angular/common/http';
 import {Observable, interval, Subscription} from 'rxjs';
-import {BookService} from '../api/book.service';
+import {Book, BookService} from '../api/book.service';
 import {AuthService} from '../api/auth.service';
-import {UserService} from '../api/user.service';
-import {RoomService} from '../api/room.service';
+import {User, UserService} from '../api/user.service';
+import {Room, RoomService} from '../api/room.service';
 import {LoanService} from '../api/loan.service';
+import {create} from 'node:domain';
 
 interface HealthSummary {
   status: string;
@@ -59,6 +60,11 @@ export class App implements OnInit, OnDestroy {
   testProgress = 0;
   loadTestSubscription?: Subscription;
 
+  // base entities
+  book: Book | null = null;
+  room: Room | null = null;
+  user: User | null = null;
+
   private baseUrl = 'http://192.168.49.2/api/Gateway';
 
   constructor(
@@ -72,6 +78,8 @@ export class App implements OnInit, OnDestroy {
   }
 
   ngOnInit() {
+    this.checkBaseEntities();
+
     this.loadTestConfig = {
       endpoint: 'Book',
       requests: 100,
@@ -96,6 +104,42 @@ export class App implements OnInit, OnDestroy {
     this.loadTestSubscription?.unsubscribe();
   }
 
+  private checkBaseEntities(createUser: boolean = true, retry: number = 5): void {
+    if (retry < 1)
+      return;
+
+    if (createUser)
+      this.userService.createProduct({
+        id: 0,
+        name: 'Test User',
+        email: 'test@example.com'
+      }).subscribe(user => this.user = user);
+    this.roomService.createProduct({
+      id: 0,
+      name: 'Test Room',
+      description: 'Test Description'
+    }).subscribe({
+      next: newRoom => {
+        this.room = newRoom;
+        this.bookService.createProduct({
+          id: 0,
+          name: 'Test Book',
+          author: 'Test Author',
+          publisher: 'Test Publisher',
+          year: 2024,
+          room: this.room
+        }).subscribe({
+          next: book => this.book = book,
+          error: _ => this.checkBaseEntities(false, retry--)
+        });
+      },
+      error: err => {
+        console.error(err);
+        this.checkBaseEntities(false, retry--);
+      }
+    });
+  }
+
   // Authentication Methods
   login() {
     if (!this.credentials.username || !this.credentials.password) {
@@ -116,7 +160,7 @@ export class App implements OnInit, OnDestroy {
         if (typeof sessionStorage === 'undefined') {
           // We're on server side, return headers without Authorization
           counter = 0;
-        }else if (sessionStorage.getItem('token')) {
+        } else if (sessionStorage.getItem('token')) {
           this.isAuthenticated = true;
         }
       }, 500);
@@ -127,7 +171,7 @@ export class App implements OnInit, OnDestroy {
     this.refreshHealth();
   }
 
-  // Health Monitoring Methods
+// Health Monitoring Methods
   refreshHealth() {
     this.isLoading = true;
 
@@ -168,7 +212,7 @@ export class App implements OnInit, OnDestroy {
     }
   }
 
-  // Load Testing Methods
+// Load Testing Methods
   startLoadTest() {
     this.isLoadTesting = true;
     this.testProgress = 0;
@@ -245,7 +289,9 @@ export class App implements OnInit, OnDestroy {
   }
 
   // Helper Methods
-  private getAuthHeaders(): HttpHeaders {
+  getAuthHeaders()
+    :
+    HttpHeaders {
     if (typeof sessionStorage === 'undefined') {
       return new HttpHeaders();
     }
@@ -255,7 +301,11 @@ export class App implements OnInit, OnDestroy {
     });
   }
 
-  private getServiceByEndpoint(endpoint: string): any {
+  getServiceByEndpoint(endpoint
+                       :
+                       string
+  ):
+    any {
     switch (endpoint) {
       case 'Book':
         return this.bookService;
@@ -270,7 +320,11 @@ export class App implements OnInit, OnDestroy {
     }
   }
 
-  private getMockData(): any {
+  private
+
+  getMockData()
+    :
+    any {
     switch (this.loadTestConfig.endpoint) {
       case 'Book':
         return {
@@ -278,7 +332,7 @@ export class App implements OnInit, OnDestroy {
           author: 'Test Author',
           publisher: 'Test Publisher',
           year: 2024,
-          room: null
+          room: this.room
         };
       case 'User':
         return {
@@ -295,8 +349,8 @@ export class App implements OnInit, OnDestroy {
           loanDate: new Date(),
           returnDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
           isReturned: false,
-          user: null,
-          book: null,
+          user: this.user,
+          book: this.book,
           status: 'active',
           comments: 'Test loan'
         };
@@ -305,7 +359,18 @@ export class App implements OnInit, OnDestroy {
     }
   }
 
-  private updateTestProgress(completed: number, total: number, testResult: any, totalTime: number) {
+  private
+
+  updateTestProgress(completed
+                     :
+                     number, total
+                     :
+                     number, testResult
+                     :
+                     any, totalTime
+                     :
+                     number
+  ) {
     this.testProgress = Math.round((completed / total) * 100);
 
     if (completed === total) {
@@ -316,7 +381,11 @@ export class App implements OnInit, OnDestroy {
     }
   }
 
-  getStatusClass(status: string): string {
+  getStatusClass(status
+                 :
+                 string
+  ):
+    string {
     switch (status?.toLowerCase()) {
       case 'healthy':
         return 'healthy';
@@ -329,7 +398,11 @@ export class App implements OnInit, OnDestroy {
     }
   }
 
-  formatUptime(seconds: number): string {
+  formatUptime(seconds
+               :
+               number
+  ):
+    string {
     const hours = Math.floor(seconds / 3600);
     const minutes = Math.floor((seconds % 3600) / 60);
     const secs = seconds % 60;
