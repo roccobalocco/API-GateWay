@@ -1,42 +1,23 @@
-import {Component, OnInit, OnDestroy} from '@angular/core';
+import {Component, OnInit, OnDestroy, ChangeDetectorRef} from '@angular/core';
 import {CommonModule} from '@angular/common';
 import {FormsModule} from '@angular/forms';
-import {HttpClient, HttpHeaders} from '@angular/common/http';
-import {Observable, interval, Subscription} from 'rxjs';
+import {HttpClient} from '@angular/common/http';
+import {Observable, interval, Subscription, finalize} from 'rxjs';
 import {Book, BookService} from '../api/book.service';
 import {AuthService} from '../api/auth.service';
 import {User, UserService} from '../api/user.service';
 import {Room, RoomService} from '../api/room.service';
-import {LoanService} from '../api/loan.service';
-import {create} from 'node:domain';
-
-interface HealthSummary {
-  status: string;
-  checks: any[];
-  totalDuration: string;
-}
-
-interface Stats {
-  uptime: number;
-  memoryUsage: number;
-  cpuUsage: number;
-  requestCount: number;
-  errorRate: number;
-}
-
-interface LoadTestConfig {
-  endpoint: string;
-  requests: number;
-  concurrency: number;
-  duration: number;
-  method: string;
-}
+import {Loan, LoanService} from '../api/loan.service';
+import {RateLimitingInfoComponent} from './info/app.info.component';
+import {JwtHelperService} from '@auth0/angular-jwt';
+import {LoadTestConfig, ServiceStats, StatsService, SummaryStatus} from '../api/stat.service';
 
 @Component({
   selector: 'app-root',
   templateUrl: './app.html',
   styleUrl: './app.css',
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, RateLimitingInfoComponent],
+  providers: [JwtHelperService]
 })
 export class App implements OnInit, OnDestroy {
   // Authentication
@@ -48,9 +29,7 @@ export class App implements OnInit, OnDestroy {
   isLoadTesting = false;
 
   // Health monitoring
-  healthSummary: HealthSummary | null = null;
-  stats: Stats | null = null;
-  autoRefresh = false;
+  autoRefresh = true;
   refreshSubscription?: Subscription;
 
   // Load testing
@@ -60,26 +39,54 @@ export class App implements OnInit, OnDestroy {
   testProgress = 0;
   loadTestSubscription?: Subscription;
 
-  // base entities
-  book: Book | null = null;
-  room: Room | null = null;
-  user: User | null = null;
+  // stats
+  servicesStats: ServiceStats[] = [];
+  summaryStatus: SummaryStatus = {};
 
+  // base entities
+  room: Room = {
+    id: 0,
+    name: 'Test Room',
+    description: 'Test Description'
+  };
+  book: Book = {
+    id: 0,
+    name: 'Test Book',
+    author: 'Test Author',
+    publisher: 'Test Publisher',
+    year: 2024,
+    room: this.room
+  };
+  user: User = {
+    id: 0,
+    name: 'Test User',
+    email: 'test@example.com'
+  };
+  loan: Loan = {
+    id: 0,
+    loanDate: new Date(),
+    returnDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+    isReturned: false,
+    user: this.user,
+    book: this.book,
+    status: 'active',
+    comments: 'Test loan'
+  };
   private baseUrl = 'http://192.168.49.2/api/Gateway';
 
   constructor(
-    private http: HttpClient,
     private authService: AuthService,
     private bookService: BookService,
     private userService: UserService,
     private roomService: RoomService,
-    private loanService: LoanService
-  ) {
+    private loanService: LoanService,
+    private statsService: StatsService,
+    private jwtHelper: JwtHelperService,
+    private cd: ChangeDetectorRef) {
   }
 
   ngOnInit() {
-    this.checkBaseEntities();
-
+    this.checkToken();
     this.loadTestConfig = {
       endpoint: 'Book',
       requests: 100,
@@ -104,43 +111,26 @@ export class App implements OnInit, OnDestroy {
     this.loadTestSubscription?.unsubscribe();
   }
 
-  private checkBaseEntities(createUser: boolean = true, retry: number = 5): void {
-    if (retry < 1)
-      return;
 
-    if (createUser)
-      this.userService.createProduct({
-        id: 0,
-        name: 'Test User',
-        email: 'test@example.com'
-      }).subscribe(user => this.user = user);
-    this.roomService.createProduct({
-      id: 0,
-      name: 'Test Room',
-      description: 'Test Description'
-    }).subscribe({
-      next: newRoom => {
-        this.room = newRoom;
-        this.bookService.createProduct({
-          id: 0,
-          name: 'Test Book',
-          author: 'Test Author',
-          publisher: 'Test Publisher',
-          year: 2024,
-          room: this.room
-        }).subscribe({
-          next: book => this.book = book,
-          error: _ => this.checkBaseEntities(false, retry--)
-        });
-      },
-      error: err => {
-        console.error(err);
-        this.checkBaseEntities(false, retry--);
+  checkToken() {
+    setTimeout(() => {
+      if (typeof sessionStorage === 'undefined') {
+        // We're on server side, return
+        return;
       }
-    });
+      const token = sessionStorage.getItem('token');
+      if (token == null) {
+        this.isAuthenticated = false;
+        return;
+      }
+      this.isAuthenticated = !this.jwtHelper.isTokenExpired(token);
+      if (!this.isAuthenticated)
+        sessionStorage.removeItem('token');
+      this.checkToken();
+    }, 1000);
   }
 
-  // Authentication Methods
+// Authentication Methods
   login() {
     if (!this.credentials.username || !this.credentials.password) {
       alert('Inserisci username e password');
@@ -152,55 +142,70 @@ export class App implements OnInit, OnDestroy {
     this.authService.login(
       this.credentials.username,
       this.credentials.password
-    );
-
-    let counter = 5;
-    while (!this.isAuthenticated && counter > 0) {
-      setTimeout(() => {
-        if (typeof sessionStorage === 'undefined') {
-          // We're on server side, return headers without Authorization
-          counter = 0;
-        } else if (sessionStorage.getItem('token')) {
-          this.isAuthenticated = true;
-        }
-      }, 500);
-      counter--;
-    }
-
-    this.isLoading = false;
-    this.refreshHealth();
+    ).subscribe(success => {
+      if (success) {
+        this.isAuthenticated = true;
+        this.refreshHealth();
+      }
+      this.isLoading = false;
+      this.cd.markForCheck();
+    });
   }
 
-// Health Monitoring Methods
+  // Health Monitoring Methods
   refreshHealth() {
     this.isLoading = true;
 
-    const headers = this.getAuthHeaders();
-
-    // Fetch health summary
-    this.http.get<HealthSummary>(`${this.baseUrl}/health/summary`, {headers}).subscribe({
+    // Fetch boolean health status for each service
+    this.statsService.getSummary().pipe(
+      finalize(() => this.cd.markForCheck())
+    ).subscribe({
       next: (data) => {
-        this.healthSummary = data;
+        this.summaryStatus = data;
       },
       error: (error) => {
         console.error('Health summary fetch failed:', error);
-        this.healthSummary = null;
+        this.summaryStatus = {};
       }
     });
 
-    // Fetch stats
-    this.http.get<Stats>(`${this.baseUrl}/stats`, {headers}).subscribe({
+    // Fetch detailed service stats
+    this.statsService.getServiceStats().pipe(
+      finalize(() => {
+          this.isLoading = false;
+          this.cd.markForCheck();
+        }
+      )).subscribe({
       next: (data) => {
-        this.stats = data;
-        this.isLoading = false;
+        this.servicesStats = data;
       },
       error: (error) => {
         console.error('Stats fetch failed:', error);
-        this.stats = null;
-        this.isLoading = false;
+        this.servicesStats = [];
       }
     });
   }
+
+  getServiceHealthClass(serviceName
+                        :
+                        string
+  ):
+    string {
+    const healthy = this.summaryStatus[serviceName];
+    if (healthy === true) return 'healthy';
+    if (healthy === false) return 'unhealthy';
+    return 'unknown';
+  }
+
+  formatAvgResponseTime(ms
+                        :
+                        number
+  ):
+    string {
+    return ms >= 1000 ? `${(ms / 1000).toFixed(2)}s` : `${ms.toFixed(2)}ms`;
+  }
+
+  objectKeys = Object.keys; // for template iteration
 
   toggleAutoRefresh() {
     if (this.autoRefresh) {
@@ -249,20 +254,21 @@ export class App implements OnInit, OnDestroy {
           observable = service.getProducts();
       }
 
-      observable.subscribe({
-        next: () => {
-          testResult.successRequests++;
-          const endTime = performance.now();
-          totalTime += (endTime - startTime);
-          completedRequests++;
-          this.updateTestProgress(completedRequests, totalRequests, testResult, totalTime);
-        },
-        error: () => {
-          testResult.errorRequests++;
-          completedRequests++;
-          this.updateTestProgress(completedRequests, totalRequests, testResult, totalTime);
-        }
-      });
+      observable
+        .pipe(
+          finalize(() => {
+            completedRequests++;
+            this.updateTestProgress(completedRequests, totalRequests, testResult, totalTime)
+          })
+        )
+        .subscribe({
+          next: () => {
+            testResult.successRequests++;
+            const endTime = performance.now();
+            totalTime += (endTime - startTime);
+          },
+          error: () => testResult.errorRequests++
+        });
     };
 
     // Execute requests with concurrency control
@@ -288,19 +294,6 @@ export class App implements OnInit, OnDestroy {
     this.loadTestSubscription?.unsubscribe();
   }
 
-  // Helper Methods
-  getAuthHeaders()
-    :
-    HttpHeaders {
-    if (typeof sessionStorage === 'undefined') {
-      return new HttpHeaders();
-    }
-    const token = sessionStorage.getItem('token');
-    return new HttpHeaders({
-      'Authorization': token ? `Bearer ${token}` : ''
-    });
-  }
-
   getServiceByEndpoint(endpoint
                        :
                        string
@@ -320,14 +313,13 @@ export class App implements OnInit, OnDestroy {
     }
   }
 
-  private
-
   getMockData()
     :
     any {
     switch (this.loadTestConfig.endpoint) {
       case 'Book':
         return {
+          id: 0,
           name: 'Test Book',
           author: 'Test Author',
           publisher: 'Test Publisher',
@@ -335,31 +327,15 @@ export class App implements OnInit, OnDestroy {
           room: this.room
         };
       case 'User':
-        return {
-          name: 'Test User',
-          email: 'test@example.com'
-        };
+        return this.user;
       case 'Room':
-        return {
-          name: 'Test Room',
-          description: 'Test Description'
-        };
+        return this.room;
       case 'Loan':
-        return {
-          loanDate: new Date(),
-          returnDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
-          isReturned: false,
-          user: this.user,
-          book: this.book,
-          status: 'active',
-          comments: 'Test loan'
-        };
+        return this.loan;
       default:
         return {};
     }
   }
-
-  private
 
   updateTestProgress(completed
                      :
@@ -379,33 +355,8 @@ export class App implements OnInit, OnDestroy {
       this.loadTestResults.unshift(testResult);
       this.isLoadTesting = false;
     }
-  }
 
-  getStatusClass(status
-                 :
-                 string
-  ):
-    string {
-    switch (status?.toLowerCase()) {
-      case 'healthy':
-        return 'healthy';
-      case 'unhealthy':
-        return 'unhealthy';
-      case 'degraded':
-        return 'degraded';
-      default:
-        return 'degraded';
-    }
-  }
-
-  formatUptime(seconds
-               :
-               number
-  ):
-    string {
-    const hours = Math.floor(seconds / 3600);
-    const minutes = Math.floor((seconds % 3600) / 60);
-    const secs = seconds % 60;
-    return `${hours}h ${minutes}m ${secs}s`;
+    this.cd.markForCheck();
+    this.cd.detectChanges();
   }
 }

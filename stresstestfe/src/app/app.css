@@ -1,84 +1,74 @@
+/* =======================
+   Dashboard Layout
+========================== */
 .dashboard-container {
   max-width: 1200px;
   margin: 0 auto;
   padding: 20px;
-  font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
 
+/* =======================
+   Header
+========================== */
 .dashboard-header {
-  display:flex;
-  justify-content:space-between;
-  align-items:center;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
   margin-bottom: 30px;
   padding-bottom: 20px;
   border-bottom: 2px solid #e0e0e0;
-
 }
 
 .dashboard-header h1 {
   color: #2c3e50;
   margin: 0;
-  font-size: 2rem;
-
+  font-size: 2.2rem;
+  font-weight: 600;
 }
 
-.status-badge {
-  padding: 8px 16px;
-  border-radius: 20px;
-  font-weight: 500;
-  font-size: 0.9rem;
-
-}
-
-.status-badge.success {
-  background-color: #d4edda;
-  color: #155724;
-
-}
-
+/* =======================
+   Card
+========================== */
 .card {
-  background: #fff;
+  background: #ffffff;
   border-radius: 12px;
   padding: 24px;
   margin-bottom: 24px;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
   border: 1px solid #e0e0e0;
-
 }
 
 .card h2 {
   color: #2c3e50;
-  margin-top: 0;
-  margin-bottom: 20px;
-  font-size: 1.5rem;
-
+  margin: 0 0 20px;
+  font-size: 1.75rem;
+  font-weight: 600;
 }
 
+/* =======================
+   Login Form
+========================== */
 .login-section {
   max-width: 400px;
   margin: 0 auto;
-
 }
 
 .login-form {
-  display:flex;
-  flex-direction:column;
+  display: flex;
+  flex-direction: column;
   gap: 16px;
-
 }
 
 .form-group {
-  display:flex;
-  flex-direction:column;
+  display: flex;
+  flex-direction: column;
   gap: 8px;
-
 }
 
 .form-group label {
   font-weight: 500;
-  color: #555;
-
+  color: #333;
 }
 
 .form-control {
@@ -86,181 +76,175 @@
   border: 2px solid #e0e0e0;
   border-radius: 8px;
   font-size: 1rem;
-  transition:border-color 0.3s;
-
+  transition: border-color 0.3s, box-shadow 0.3s;
 }
 
 .form-control:focus {
-  outline:none;
+  outline: none;
   border-color: #3498db;
-  box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
-
+  box-shadow: 0 0 0 4px rgba(52, 152, 219, 0.15);
 }
 
+/* =======================
+   Buttons
+========================== */
 .btn {
   padding: 12px 24px;
-  border:none;
+  border: none;
   border-radius: 8px;
-  cursor:pointer;
+  cursor: pointer;
   font-size: 1rem;
   font-weight: 500;
-  transition:all 0.3s;
-  text-align:center;
-  text-decoration:none;
-  display:inline-block;
-
+  transition: background-color 0.3s, transform 0.2s;
 }
 
 .btn:disabled {
   opacity: 0.6;
-  cursor:not-allowed;
-
+  cursor: not-allowed;
 }
 
 .btn-primary {
   background-color: #3498db;
-  color:white;
-
+  color: #fff;
 }
 
 .btn-primary:hover:not(:disabled) {
   background-color: #2980b9;
-
+  transform: scale(1.02);
 }
 
 .btn-secondary {
   background-color: #95a5a6;
-  color:white;
-
+  color: #fff;
 }
 
 .btn-secondary:hover:not(:disabled) {
   background-color: #7f8c8d;
-
+  transform: scale(1.02);
 }
 
 .btn-danger {
   background-color: #e74c3c;
-  color:white;
-
+  color: #fff;
 }
 
 .btn-danger:hover:not(:disabled) {
   background-color: #c0392b;
-
+  transform: scale(1.02);
 }
 
+/* =======================
+   Health Monitoring
+========================== */
 .health-controls {
-  display:flex;
+  display: flex;
   gap: 16px;
-  align-items:center;
+  align-items: center;
   margin-bottom: 20px;
-
 }
 
 .auto-refresh {
-  display:flex;
-  align-items:center;
+  display: flex;
+  align-items: center;
   gap: 8px;
-  font-size: 0.9rem;
-
+  font-size: 0.95rem;
+  color: #444;
 }
 
 .health-grid {
-  display:grid;
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-  gap: 20px;
-
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 24px;
 }
 
+/* Card inside health grid */
 .health-card {
   background: #f8f9fa;
   padding: 20px;
-  border-radius: 8px;
+  border-radius: 10px;
   border: 1px solid #dee2e6;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  transition: transform 0.2s ease-in-out;
+}
 
+.health-card:hover {
+  transform: translateY(-2px);
 }
 
 .health-card h3 {
   margin-top: 0;
-  color: #495057;
-
+  margin-bottom: 12px;
+  color: #2c3e50;
+  font-weight: 600;
 }
 
+/* =======================
+   Status Indicator
+========================== */
 .status-indicator {
   padding: 8px 16px;
   border-radius: 20px;
-  font-weight: 500;
-  text-align:center;
+  font-weight: 600;
+  text-align: center;
   margin-bottom: 12px;
-
+  display: inline-block;
+  min-width: 120px;
 }
 
 .status-indicator.healthy {
   background-color: #d4edda;
   color: #155724;
-
 }
 
 .status-indicator.unhealthy {
   background-color: #f8d7da;
   color: #721c24;
-
 }
 
 .status-indicator.degraded {
   background-color: #fff3cd;
   color: #856404;
-
 }
 
-.stats-info {
-  display:flex;
-  flex-direction:column;
-  gap: 8px;
+.status-indicator.unknown {
+  background-color: #e2e3e5;
+  color: #383d41;
+}
 
+/* =======================
+   Stats Info
+========================== */
+.stats-info {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
 }
 
 .stat-item {
-  display:flex;
-  justify-content:space-between;
-  align-items:center;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
   padding: 8px 0;
   border-bottom: 1px solid #e0e0e0;
-
 }
 
 .stat-label {
   font-weight: 500;
   color: #555;
-
 }
 
 .stat-value {
   font-weight: 600;
   color: #2c3e50;
-
 }
 
-.config-grid {
-  display:grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 16px;
-  margin-bottom: 20px;
-
-}
-
-.test-actions {
-  display:flex;
-  gap: 16px;
-
-}
-
+/* =======================
+   Load Test Results
+========================== */
 .results-grid {
-  display:grid;
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
   gap: 16px;
-
 }
 
 .result-card {
@@ -268,70 +252,84 @@
   padding: 16px;
   border-radius: 8px;
   border: 1px solid #dee2e6;
-
 }
 
 .result-card h4 {
   margin-top: 0;
   color: #495057;
-
 }
 
 .result-stats {
-  display:flex;
-  flex-direction:column;
+  display: flex;
+  flex-direction: column;
   gap: 8px;
-
 }
 
 .result-item {
-  font-size: 0.9rem;
+  font-size: 0.95rem;
   color: #555;
-
 }
 
+/* =======================
+   Progress Section
+========================== */
 .progress-section {
-  position:fixed;
+  position: fixed;
   bottom: 20px;
   left: 50%;
   transform: translateX(-50%);
-  background:white;
+  background: white;
   padding: 20px;
   border-radius: 8px;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
   min-width: 300px;
-
+  z-index: 1000;
 }
 
 .progress-bar {
   width: 100%;
-  height: 8px;
+  height: 10px;
   background-color: #e0e0e0;
   border-radius: 4px;
-  overflow:hidden;
+  overflow: hidden;
   margin-bottom: 8px;
-
 }
 
 .progress-fill {
   height: 100%;
   background-color: #3498db;
-  transition:width 0.3s ease;
-
+  transition: width 0.3s ease;
 }
 
 .progress-text {
-  text-align:center;
+  text-align: center;
   margin: 0;
   font-size: 0.9rem;
   color: #555;
-
 }
 
+/* =======================
+   Misc
+========================== */
 .no-data {
-  text-align:center;
+  text-align: center;
   color: #888;
-  font-style:italic;
+  font-style: italic;
   padding: 20px;
+}
 
+.test-actions {
+  display: flex;
+  gap: 16px;
+}
+
+.config-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.service-stat{
+  color: black;
 }

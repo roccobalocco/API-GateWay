@@ -1,6 +1,18 @@
 import {HttpClient, HttpHeaders} from '@angular/common/http';
 import {Injectable} from '@angular/core';
-import {Observable} from 'rxjs';
+import {catchError, map, Observable, of} from 'rxjs';
+
+
+export function getAuthHeaders(): HttpHeaders {
+  if (typeof sessionStorage === 'undefined') {
+    // We're on server side, return
+    return new HttpHeaders();
+  }
+  const token = sessionStorage.getItem('token');
+  return new HttpHeaders({
+    'Authorization': token ? `Bearer ${token}` : ''
+  });
+}
 
 @Injectable({
   providedIn: 'root'
@@ -19,11 +31,18 @@ export class AuthService {
     sessionStorage.setItem('token', token);
   }
 
-  login(username: string, password: string): void {
-    this.http.post<{ accessToken: string }>(this.apiUrl, {username: username, password: password})
-      .subscribe({
-        next: (res: { accessToken: string }) => this.setAuthHeaders(res.accessToken),
-        error: (err) => console.error(err)
-      });
+  login(username: string, password: string): Observable<boolean> {
+    return this.http.post<{ accessToken: string }>(this.apiUrl, {username, password})
+      .pipe(map(res => {
+          this.setAuthHeaders(res.accessToken);
+          console.error("logged in");
+          return true;
+        }),
+        catchError(err => {
+          console.error(err);
+          return of(false);
+        })
+      );
   }
+
 }

@@ -549,30 +549,29 @@ spec:
 ---
 
 # Prometheus Deployment & Service
-
 apiVersion: v1
 kind: ConfigMap
 metadata:
   name: prometheus-config
   namespace: cloudmare
 data:
-  prometheus.yml: |
+  prometheus.yml: |-
     global:
-    scrape_interval: 15s
+      scrape_interval: 15s
 
     scrape_configs:
-    - job_name: 'kubernetes-annotated-services'
+      - job_name: 'kubernetes-annotated-services'
         kubernetes_sd_configs:
-        - role: endpoints
+          - role: endpoints
         relabel_configs:
-        - source_labels: [__meta_kubernetes_service_annotation_prometheus_io_scrape]
+          - source_labels: [__meta_kubernetes_service_annotation_prometheus_io_scrape]
             action: keep
             regex: true
-        - source_labels: [__meta_kubernetes_service_annotation_prometheus_io_path]
+          - source_labels: [__meta_kubernetes_service_annotation_prometheus_io_path]
             action: replace
             target_label: __metrics_path__
             regex: (.+)
-        - source_labels: [__address__, __meta_kubernetes_service_annotation_prometheus_io_port]
+          - source_labels: [__address__, __meta_kubernetes_service_annotation_prometheus_io_port]
             action: replace
             regex: (.+):(?:\d+);(\d+)
             replacement: $1:$2
@@ -595,6 +594,7 @@ spec:
       labels:
         app: prometheus
     spec:
+      serviceAccountName: prometheus
       containers:
         - name: prometheus
           image: prom/prometheus:latest
@@ -620,7 +620,7 @@ metadata:
   annotations:
     prometheus.io/scrape: "true"
     prometheus.io/path: "/metrics"
-    prometheus.io/port: "8080"
+    prometheus.io/port: "9090"
 spec:
   ports:
     - port: 9090
@@ -638,7 +638,7 @@ metadata:
   name: grafana-provisioning
   namespace: cloudmare
 data:
-  datasources.yaml: |-
+  datasource.yaml: |-
     apiVersion: 1
     datasources:
       - name: Prometheus
@@ -647,9 +647,7 @@ data:
         url: http://prometheus:9090
         isDefault: true
         editable: false
-
 ---
-
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -681,14 +679,16 @@ spec:
               value: "Viewer"
           volumeMounts:
             - name: grafana-provisioning
-              mountPath: /etc/grafana/provisioning
+              mountPath: /etc/grafana/provisioning/datasources 
       volumes:
         - name: grafana-provisioning
           configMap:
             name: grafana-provisioning
+            
 
 ---
 
+# Grafana Service
 apiVersion: v1
 kind: Service
 metadata:
@@ -697,7 +697,7 @@ metadata:
   annotations:
     prometheus.io/scrape: "true"
     prometheus.io/path: "/metrics"
-    prometheus.io/port: "8080"
+    prometheus.io/port: "3000" 
 spec:
   ports:
     - port: 3000

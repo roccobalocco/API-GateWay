@@ -1,4 +1,4 @@
-import {mergeApplicationConfig, ApplicationConfig} from '@angular/core';
+import {mergeApplicationConfig, ApplicationConfig, provideZonelessChangeDetection} from '@angular/core';
 import {provideServerRendering, withRoutes} from '@angular/ssr';
 import {appConfig} from './app.config';
 import {serverRoutes} from './app.routes.server';
@@ -9,6 +9,7 @@ import Aura from '@primeuix/themes/aura';
 
 const serverConfig: ApplicationConfig = {
   providers: [
+    provideZonelessChangeDetection(),
     provideHttpClient(),
     provideAnimationsAsync(),
     providePrimeNG({

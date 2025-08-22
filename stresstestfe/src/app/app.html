@@ -5,9 +5,14 @@
       <div class="auth-status">
         <span class="status-badge success">🟢 Autenticato</span>
       </div>
+    } @else {
+      <div class="auth-status">
+        <span class="status-badge error">🟢 Autenticato</span>
+      </div>
     }
   </header>
-
+  <app-rate-limiting-info>
+  </app-rate-limiting-info>
   <!-- Login Section -->
   @if (!isAuthenticated) {
     <div class="login-section">
@@ -49,6 +54,7 @@
       <div class="health-section">
         <div class="card">
           <h2>📊 Stato di Salute del Sistema</h2>
+
           <div class="health-controls">
             <button (click)="refreshHealth()" class="btn btn-secondary" [disabled]="isLoading">
               🔄 Aggiorna
@@ -64,60 +70,56 @@
           </div>
 
           <div class="health-grid">
-            <div class="health-card">
+
+            <!-- Summary status per service (boolean values) -->
+            <div class="health-card" *ngIf="summaryStatus">
               <h3>Health Summary</h3>
-              @if (healthSummary) {
-                <div class="health-info">
-                  <div class="status-indicator" [class]="getStatusClass(healthSummary.status)">
-                    {{ healthSummary.status }}
-                  </div>
-                  <p>Durata: {{ healthSummary.totalDuration }}</p>
-                  <p>Controlli: {{ healthSummary.checks?.length || 0 }}</p>
+              <div class="health-info" *ngFor="let service of objectKeys(summaryStatus)">
+                <div class="status-indicator" [class]="getServiceHealthClass(service)">
+                  {{ service }}: {{ summaryStatus[service] ? 'Healthy' : 'Unhealthy' }}
                 </div>
-              }
-              @if (!healthSummary && !isLoading) {
-                <div class="no-data">
-                  Nessun dato disponibile
-                </div>
-              }
+              </div>
             </div>
 
-            <div class="health-card">
-              <h3>Statistiche</h3>
-              @if (stats) {
-                <div class="stats-info">
-                  <div class="stat-item">
-                    <span class="stat-label">Uptime:</span>
-                    <span class="stat-value">{{ formatUptime(stats.uptime) }}</span>
-                  </div>
-                  <div class="stat-item">
-                    <span class="stat-label">CPU:</span>
-                    <span class="stat-value">{{ stats.cpuUsage }}%</span>
-                  </div>
-                  <div class="stat-item">
-                    <span class="stat-label">Memory:</span>
-                    <span class="stat-value">{{ stats.memoryUsage }}%</span>
-                  </div>
-                  <div class="stat-item">
-                    <span class="stat-label">Requests:</span>
-                    <span class="stat-value">{{ stats.requestCount }}</span>
-                  </div>
-                  <div class="stat-item">
-                    <span class="stat-label">Error Rate:</span>
-                    <span class="stat-value">{{ stats.errorRate }}%</span>
-                  </div>
-                </div>
-              }
-              @if (!stats && !isLoading) {
-                <div class="no-data">
-                  Nessun dato disponibile
-                </div>
-              }
+            <!-- Per-service detailed stats -->
+            <div class="health-card" *ngIf="servicesStats?.length">
+              <h3>Statistiche Servizi</h3>
+              <div *ngFor="let svc of servicesStats" class="service-stat">
+                <h4>{{ svc.serviceName }}</h4>
+                <p><strong>Totale richieste:</strong> {{ svc.totalRequests }}</p>
+                <p><strong>Tempo medio risposta:</strong> {{ formatAvgResponseTime(svc.avgResponseTime) }}</p>
+                <p><strong>Ultima chiamata:</strong> {{ svc.lastCalled | date:'short' }}</p>
+
+                <p><strong>Metodi:</strong>
+                  <span *ngFor="let method of objectKeys(svc.methodCounts); let last = last">
+              {{ method }} ({{ svc.methodCounts[method] }})<span *ngIf="!last">, </span>
+            </span>
+                </p>
+
+                <p><strong>Utenti:</strong>
+                  <span *ngFor="let user of objectKeys(svc.users); let last = last">
+              {{ user }} ({{ svc.users[user] }})<span *ngIf="!last">, </span>
+            </span>
+                </p>
+
+                <p><strong>Endpoint:</strong>
+                  <span *ngFor="let path of objectKeys(svc.paths); let last = last">
+              {{ path }} ({{ svc.paths[path] }})<span *ngIf="!last">, </span>
+            </span>
+                </p>
+
+                <hr>
+              </div>
             </div>
+
+            <!-- Loading or no-data state -->
+            <div class="health-card" *ngIf="!servicesStats?.length && !isLoading">
+              <div class="no-data">Nessun dato disponibile</div>
+            </div>
+
           </div>
         </div>
       </div>
-
       <!-- Load Testing Section -->
       <div class="load-test-section">
         <div class="card">
@@ -209,50 +211,46 @@
           </div>
 
           <!-- Test Results -->
-          @if (loadTestResults.length > 0) {
-            <div class="test-results">
-              <h3>Risultati Test</h3>
-              <div class="results-grid">
-                @for (result of loadTestResults; track $index) {
-                  <div class="result-card">
-                    <h4>Test {{ $index + 1 }}</h4>
-                    <div class="result-stats">
+          <div *ngIf="loadTestResults.length > 0" class="test-results">
+            <h3>Risultati Test</h3>
+            <div class="results-grid">
+              @for (result of loadTestResults; track $index) {
+                <div class="result-card">
+                  <h4>Test {{ $index + 1 }}</h4>
+                  <div class="result-stats">
                     <span class="result-item">
                       <strong>Endpoint:</strong> {{ result.endpoint }}
                     </span>
-                      <span class="result-item">
+                    <span class="result-item">
                       <strong>Richieste:</strong> {{ result.totalRequests }}
                     </span>
-                      <span class="result-item">
+                    <span class="result-item">
                       <strong>Successi:</strong> {{ result.successRequests }}
                     </span>
-                      <span class="result-item">
+                    <span class="result-item">
                       <strong>Errori:</strong> {{ result.errorRequests }}
                     </span>
-                      <span class="result-item">
+                    <span class="result-item">
                       <strong>Tempo medio:</strong> {{ result.averageTime }}ms
                     </span>
-                      <span class="result-item">
+                    <span class="result-item">
                       <strong>Successo:</strong> {{ result.successRate }}%
                     </span>
-                    </div>
                   </div>
-                }
-              </div>
+                </div>
+              }
             </div>
-          }
+          </div>
         </div>
       </div>
 
       <!-- Progress Bar -->
-      @if (isLoadTesting) {
-        <div class="progress-section">
-          <div class="progress-bar">
-            <div class="progress-fill" [style.width.%]="testProgress"></div>
-          </div>
-          <p class="progress-text">Test in corso: {{ testProgress }}%</p>
+      <div *ngIf="isLoadTesting" class="progress-section">
+        <div class="progress-bar">
+          <div class="progress-fill" [style.width.%]="testProgress"></div>
         </div>
-      }
+        <p class="progress-text">Test in corso: {{ testProgress }}%</p>
+      </div>
     </div>
   }
 </div>
