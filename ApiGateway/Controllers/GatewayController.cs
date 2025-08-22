@@ -157,6 +157,10 @@ public class GatewayController(
         {
             var client = CreateClientForService(serviceName);
             var res = await client.GetAsync(url);
+            
+            if (!res.IsSuccessStatusCode)
+                throw new Exception($"Request {serviceName} - DELETE - {url} - {User.Identity?.Name}");
+
             var content = await res.Content.ReadAsStringAsync();
             sw.Stop();
             _metrics.RecordRequest(serviceName, "GET", url, User.Identity?.Name ?? "anonymous", sw.ElapsedMilliseconds);
@@ -182,6 +186,11 @@ public class GatewayController(
             var json = JsonSerializer.Serialize(data);
             var res = await client.PostAsync(url,
                 new StringContent(json, Encoding.UTF8, "application/json"));
+            
+            
+            if (!res.IsSuccessStatusCode)
+                throw new Exception($"Request {serviceName} - DELETE - {url} - {User.Identity?.Name}");
+            
             var content = await res.Content.ReadAsStringAsync();
             sw.Stop();
             _metrics.RecordRequest(serviceName, "POST", url, User.Identity?.Name ?? "anonymous",
@@ -208,6 +217,10 @@ public class GatewayController(
             var json = JsonSerializer.Serialize(data);
             var res = await client.PutAsync(url,
                 new StringContent(json, Encoding.UTF8, "application/json"));
+            
+            if (!res.IsSuccessStatusCode)
+                throw new Exception($"Request {serviceName} - DELETE - {url} - {User.Identity?.Name}");
+            
             var content = await res.Content.ReadAsStringAsync();
             sw.Stop();
             _metrics.RecordRequest(serviceName, "PUT", url, User.Identity?.Name ?? "anonymous", sw.ElapsedMilliseconds);
@@ -230,6 +243,10 @@ public class GatewayController(
         {
             var client = CreateClientForService(serviceName);
             var res = await client.DeleteAsync(url);
+
+            if (!res.IsSuccessStatusCode)
+                throw new Exception($"Request {serviceName} - DELETE - {url} - {User.Identity?.Name}");
+            
             var content = await res.Content.ReadAsStringAsync();
             sw.Stop();
             _metrics.RecordRequest(serviceName, "DELETE", url, User.Identity?.Name ?? "anonymous",

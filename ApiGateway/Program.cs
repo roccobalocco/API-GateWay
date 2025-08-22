@@ -229,7 +229,7 @@ app.UseAuthorization();
 app.MapMetrics();
 
 app.MapControllers()
-    .RequireRateLimiting("FixedPolicy")
-    .RequireRateLimiting("PerIpLimiter");
+    .RequireRateLimiting("PerIpLimiter")
+    .RequireRateLimiting("FixedPolicy");
 
 app.Run();
