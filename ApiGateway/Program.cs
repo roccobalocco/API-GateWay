@@ -26,6 +26,7 @@ config.AddTarget(ftarget);
 config.AddRuleForAllLevels(ftarget);
 
 NLog.LogManager.Configuration = config;
+var logger = NLog.LogManager.GetCurrentClassLogger();
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -136,13 +137,11 @@ builder.Services.AddRateLimiter(options =>
 {
     options.OnRejected = (context, token) =>
     {
-        var logger = context.HttpContext?.RequestServices
-            .GetRequiredService<ILogger<Program>>();
 
         var ip = context.HttpContext?.Connection.RemoteIpAddress?.ToString() ?? "unknown";
         var path = context.HttpContext?.Request.Path.Value ?? "unknown";
 
-        logger?.LogWarning("Rate limit rejected request. IP: {IP}, Path: {Path}", ip, path);
+        logger.Warn("Rate limit rejected request. IP: {IP}, Path: {Path}", ip, path);
 
         return ValueTask.CompletedTask;
     };
