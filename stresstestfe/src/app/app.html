@@ -3,11 +3,11 @@
     <h1>Kubernetes Dashboard & Load Tester</h1>
     @if (isAuthenticated) {
       <div class="auth-status">
-        <span class="status-badge success">🟢 Autenticato</span>
+        <span class="status-badge success">🟢 Auth</span>
       </div>
     } @else {
       <div class="auth-status">
-        <span class="status-badge error">🟢 Autenticato</span>
+        <span class="status-badge error">🟢 Not auth</span>
       </div>
     }
   </header>
@@ -42,7 +42,7 @@
             >
           </div>
           <button type="submit" class="btn btn-primary" [disabled]="isLoading">
-            {{ isLoading ? 'Accesso...' : 'Login' }}
+            {{ isLoading ? 'Logging in...' : 'Login' }}
           </button>
         </form>
       </div>
@@ -53,11 +53,11 @@
       <!-- Health Status Section -->
       <div class="health-section">
         <div class="card">
-          <h2>📊 Stato di Salute del Sistema</h2>
+          <h2>📊 System health status</h2>
 
           <div class="health-controls">
             <button (click)="refreshHealth()" class="btn btn-secondary" [disabled]="isLoading">
-              🔄 Aggiorna
+              🔄 Refresh
             </button>
             <label class="auto-refresh">
               <input
@@ -70,7 +70,6 @@
           </div>
 
           <div class="health-grid">
-
             <!-- Summary status per service (boolean values) -->
             <div class="health-card" *ngIf="summaryStatus">
               <h3>Health Summary</h3>
@@ -83,49 +82,45 @@
 
             <!-- Per-service detailed stats -->
             <div class="health-card" *ngIf="servicesStats?.length">
-              <h3>Statistiche Servizi</h3>
+              <h3>Service statistics</h3>
               <div *ngFor="let svc of servicesStats" class="service-stat">
                 <h4>{{ svc.serviceName }}</h4>
-                <p><strong>Totale richieste:</strong> {{ svc.totalRequests }}</p>
-                <p><strong>Tempo medio risposta:</strong> {{ formatAvgResponseTime(svc.avgResponseTime) }}</p>
-                <p><strong>Ultima chiamata:</strong> {{ svc.lastCalled | date:'short' }}</p>
+                <p><strong>Total requests:</strong> {{ svc.totalRequests }}</p>
+                <p><strong>Average reply time:</strong> {{ formatAvgResponseTime(svc.avgResponseTime) }}</p>
+                <p><strong>Last request:</strong> {{ svc.lastCalled | date:'short' }}</p>
 
-                <p><strong>Metodi:</strong>
+                <p><strong>Methods:</strong>
                   <span *ngFor="let method of objectKeys(svc.methodCounts); let last = last">
-              {{ method }} ({{ svc.methodCounts[method] }})<span *ngIf="!last">, </span>
-            </span>
+                    {{ method }} ({{ svc.methodCounts[method] }})<span *ngIf="!last">, </span>
+                  </span>
                 </p>
-
-                <p><strong>Utenti:</strong>
+                <p><strong>Users:</strong>
                   <span *ngFor="let user of objectKeys(svc.users); let last = last">
-              {{ user }} ({{ svc.users[user] }})<span *ngIf="!last">, </span>
-            </span>
+                    {{ user }} ({{ svc.users[user] }})<span *ngIf="!last">, </span>
+                  </span>
                 </p>
-
                 <p><strong>Endpoint:</strong>
                   <span *ngFor="let path of objectKeys(svc.paths); let last = last">
-              {{ path }} ({{ svc.paths[path] }})<span *ngIf="!last">, </span>
-            </span>
+                    {{ path }} ({{ svc.paths[path] }})<span *ngIf="!last">, </span>
+                  </span>
                 </p>
-
                 <hr>
               </div>
             </div>
 
             <!-- Loading or no-data state -->
             <div class="health-card" *ngIf="!servicesStats?.length && !isLoading">
-              <div class="no-data">Nessun dato disponibile</div>
+              <div class="no-data">No data</div>
             </div>
-
           </div>
         </div>
       </div>
       <!-- Load Testing Section -->
       <div class="load-test-section">
         <div class="card">
-          <h2>🚀 Test di Resistenza Kubernetes</h2>
+          <h2>🚀 K8s resistence test</h2>
           <div class="test-config">
-            <h3>Configurazione Test</h3>
+            <h3>Test configuration</h3>
             <div class="config-grid">
               <div class="form-group">
                 <label for="endpoint">Endpoint:</label>
@@ -142,7 +137,7 @@
               </div>
 
               <div class="form-group">
-                <label for="method">Metodo:</label>
+                <label for="method">Method:</label>
                 <select
                   id="method"
                   [(ngModel)]="loadTestConfig.method"
@@ -156,7 +151,7 @@
               </div>
 
               <div class="form-group">
-                <label for="requests">Numero Richieste:</label>
+                <label for="requests">Requests number:</label>
                 <input
                   id="requests"
                   type="number"
@@ -168,7 +163,7 @@
               </div>
 
               <div class="form-group">
-                <label for="concurrency">Concorrenza:</label>
+                <label for="concurrency">Concurrency:</label>
                 <input
                   id="concurrency"
                   type="number"
@@ -180,7 +175,7 @@
               </div>
 
               <div class="form-group">
-                <label for="duration">Durata (secondi):</label>
+                <label for="duration">Time (seconds):</label>
                 <input
                   id="duration"
                   type="number"
@@ -198,21 +193,21 @@
                 class="btn btn-primary"
                 [disabled]="isLoadTesting"
               >
-                {{ isLoadTesting ? 'Test in corso...' : 'Avvia Test' }}
+                {{ isLoadTesting ? 'Testing...' : 'Start test' }}
               </button>
               <button
                 (click)="stopLoadTest()"
                 class="btn btn-danger"
                 [disabled]="!isLoadTesting"
               >
-                Ferma Test
+                Stop test
               </button>
             </div>
           </div>
 
           <!-- Test Results -->
           <div *ngIf="loadTestResults.length > 0" class="test-results">
-            <h3>Risultati Test</h3>
+            <h3>Test results</h3>
             <div class="results-grid">
               @for (result of loadTestResults; track $index) {
                 <div class="result-card">
@@ -222,19 +217,19 @@
                       <strong>Endpoint:</strong> {{ result.endpoint }}
                     </span>
                     <span class="result-item">
-                      <strong>Richieste:</strong> {{ result.totalRequests }}
+                      <strong>Requests:</strong> {{ result.totalRequests }}
                     </span>
                     <span class="result-item">
-                      <strong>Successi:</strong> {{ result.successRequests }}
+                      <strong>Successes:</strong> {{ result.successRequests }}
                     </span>
                     <span class="result-item">
-                      <strong>Errori:</strong> {{ result.errorRequests }}
+                      <strong>Errors:</strong> {{ result.errorRequests }}
                     </span>
                     <span class="result-item">
-                      <strong>Tempo medio:</strong> {{ result.averageTime }}ms
+                      <strong>Average time:</strong> {{ result.averageTime }}ms
                     </span>
                     <span class="result-item">
-                      <strong>Successo:</strong> {{ result.successRate }}%
+                      <strong>Success rate:</strong> {{ result.successRate }}%
                     </span>
                   </div>
                 </div>
@@ -249,7 +244,7 @@
         <div class="progress-bar">
           <div class="progress-fill" [style.width.%]="testProgress"></div>
         </div>
-        <p class="progress-text">Test in corso: {{ testProgress }}%</p>
+        <p class="progress-text">Testing: {{ testProgress }}%</p>
       </div>
     </div>
   }

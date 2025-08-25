@@ -8,42 +8,6 @@ import {AccordionModule} from 'primeng/accordion';
       <h2 class="text-2xl font-bold mb-4 text-blue-800">Rate Limiting Overview</h2>
       <p-accordion value="0">
         <p-accordion-panel value="0">
-          <p-accordion-header>General Info</p-accordion-header>
-          <p-accordion-content>
-            <div class="mb-6">
-              <h3 class="text-xl font-semibold text-gray-700">1. Fixed Policy (Global Limit)</h3>
-              <ul class="list-disc list-inside text-gray-600 mt-2">
-                <li>Maximum accepted requests: <strong>800 per minute</strong></li>
-                <li>Queued requests allowed: <strong>225</strong></li>
-                <li>Total handled before rejection: <strong>1,025 per minute</strong></li>
-                <li>Requests above this threshold are <span class="text-red-600 font-semibold">rejected</span>.</li>
-              </ul>
-            </div>
-
-            <div class="mb-6">
-              <h3 class="text-xl font-semibold text-gray-700">2. Per IP Limiter</h3>
-              <ul class="list-disc list-inside text-gray-600 mt-2">
-                <li>Each IP can send up to <strong>400 requests per minute</strong></li>
-                <li>Extra requests queued: <strong>100</strong></li>
-                <li>Total allowed per IP: <strong>500 per minute</strong></li>
-                <li>Requests above this threshold from the same IP are <span
-                  class="text-red-600 font-semibold">rejected</span>.
-                </li>
-              </ul>
-            </div>
-
-            <div>
-              <h3 class="text-xl font-semibold text-gray-700">Applied Policies</h3>
-              <p class="text-gray-600 mt-2">
-                Both <strong>FixedPolicy</strong> and <strong>PerIpLimiter</strong> are applied to all API endpoints.
-                A request must satisfy both conditions to be processed.
-              </p>
-            </div>
-          </p-accordion-content>
-        </p-accordion-panel>
-      </p-accordion>
-      <p-accordion value="1">
-        <p-accordion-panel value="1">
           <p-accordion-header>Specific Info</p-accordion-header>
           <p-accordion-content>
             <div class="mb-6">
