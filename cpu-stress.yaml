@@ -1,0 +1,15 @@
+apiVersion: chaos-mesh.org/v1alpha1
+kind: StressChaos
+metadata:
+  name: cpu-stress-all
+  namespace: cloudmare
+spec:
+  mode: all
+  selector:
+    namespaces:
+      - cloudmare
+  stressors:
+    cpu:
+      workers: 2
+      load: 80
+  duration: "60s"
