@@ -1,7 +1,6 @@
 import {Component, OnInit, OnDestroy, ChangeDetectorRef} from '@angular/core';
 import {CommonModule} from '@angular/common';
 import {FormsModule} from '@angular/forms';
-import {HttpClient} from '@angular/common/http';
 import {Observable, interval, Subscription, finalize} from 'rxjs';
 import {Book, BookService} from '../api/book.service';
 import {AuthService} from '../api/auth.service';
@@ -72,7 +71,6 @@ export class App implements OnInit, OnDestroy {
     status: 'active',
     comments: 'Test loan'
   };
-  private baseUrl = 'http://192.168.49.2/api/Gateway';
 
   constructor(
     private authService: AuthService,
@@ -95,7 +93,7 @@ export class App implements OnInit, OnDestroy {
       method: 'GET'
     };
     if (typeof sessionStorage === 'undefined') {
-      // We're on server side, return
+      // We're on the server side, return
       return;
     }
     // Check if already authenticated
@@ -115,7 +113,7 @@ export class App implements OnInit, OnDestroy {
   checkToken() {
     setTimeout(() => {
       if (typeof sessionStorage === 'undefined') {
-        // We're on server side, return
+        // We're on the server side, return
         return;
       }
       const token = sessionStorage.getItem('token');
@@ -133,7 +131,7 @@ export class App implements OnInit, OnDestroy {
 // Authentication Methods
   login() {
     if (!this.credentials.username || !this.credentials.password) {
-      alert('Inserisci username e password');
+      alert('Insert username and password');
       return;
     }
 
@@ -192,8 +190,8 @@ export class App implements OnInit, OnDestroy {
   ):
     string {
     const healthy = this.summaryStatus[serviceName];
-    if (healthy === true) return 'healthy';
-    if (healthy === false) return 'unhealthy';
+    if (healthy) return 'healthy';
+    if (!healthy) return 'unhealthy';
     return 'unknown';
   }
 
