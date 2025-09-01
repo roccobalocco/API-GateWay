@@ -12,23 +12,38 @@ using Microsoft.OpenApi.Models;
 using Microsoft.AspNetCore.RateLimiting;
 using System.Threading.RateLimiting;
 using ApiGateway.Services;
+using NLog;
+using NLog.Extensions.Logging;
 using Prometheus;
 
-var config = new LoggingConfiguration();
+// Create NLog configuration
+LoggingConfiguration config = new LoggingConfiguration();
 
-var ftarget = new FileTarget("file")
+FileTarget fileTarget = new FileTarget("file")
 {
-    FileName = "/app/output.log", // path assoluto, assicurati esista e permessi
+    FileName = "/app/output.log", // make sure path exists and is writable
     Layout = "${longdate} ${level} ${message} ${exception}"
 };
 
-config.AddTarget(ftarget);
-config.AddRuleForAllLevels(ftarget);
+config.AddTarget(fileTarget);
+config.AddRuleForAllLevels(fileTarget);
 
-NLog.LogManager.Configuration = config;
-var logger = NLog.LogManager.GetCurrentClassLogger();
+ConsoleTarget consoleTarget = new ConsoleTarget("console")
+{
+    Layout = "${longdate} ${level} ${message} ${exception}"
+};
+config.AddTarget(consoleTarget);
+config.AddRuleForAllLevels(consoleTarget);
 
-var builder = WebApplication.CreateBuilder(args);
+LogManager.Configuration = config;
+
+WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
+
+builder.Services.AddSingleton<Logger>(LogManager.GetCurrentClassLogger());
+
+builder.Logging.ClearProviders();
+builder.Logging.SetMinimumLevel(Microsoft.Extensions.Logging.LogLevel.Debug);
+builder.Logging.AddNLog(config);
 
 // Add services to the container.
 builder.Services.AddControllers();
@@ -53,7 +68,7 @@ builder.Services.AddSwaggerGen(c =>
         In = ParameterLocation.Header,
         Type = SecuritySchemeType.Http,
         Scheme = "bearer",
-        BearerFormat = "JWT" 
+        BearerFormat = "JWT"
     });
 
     c.AddSecurityRequirement(new OpenApiSecurityRequirement
@@ -132,20 +147,8 @@ builder.Services.AddHttpClient("UserClient", client => { client.Timeout = TimeSp
         options.CircuitBreaker.BreakDuration = TimeSpan.FromSeconds(6);
     });
 
-// ➕ RATE LIMITING (.NET 8)
 builder.Services.AddRateLimiter(options =>
 {
-    options.OnRejected = (context, token) =>
-    {
-
-        var ip = context.HttpContext?.Connection.RemoteIpAddress?.ToString() ?? "unknown";
-        var path = context.HttpContext?.Request.Path.Value ?? "unknown";
-
-        logger.Warn("Rate limit rejected request. IP: {IP}, Path: {Path}", ip, path);
-
-        return ValueTask.CompletedTask;
-    };
-
     options.AddFixedWindowLimiter("FixedPolicy", opt =>
     {
         opt.PermitLimit = 800;
@@ -171,8 +174,8 @@ builder.Services.AddRateLimiter(options =>
 });
 
 
-var jwtOptions = builder.Configuration.GetSection(nameof(JWTOptions)).Get<JWTOptions>();
-var key = Encoding.ASCII.GetBytes(jwtOptions!.SecretKey);
+JWTOptions? jwtOptions = builder.Configuration.GetSection(nameof(JWTOptions)).Get<JWTOptions>();
+byte[] key = Encoding.ASCII.GetBytes(jwtOptions!.SecretKey);
 
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
@@ -193,15 +196,15 @@ builder.Services.AddAuthorization();
 builder.Services.AddHealthChecks();
 builder.Services.AddSingleton<MetricsService>();
 
-var app = builder.Build();
+WebApplication app = builder.Build();
 
 app.UseHttpMetrics();
 app.MapHealthChecks("/health/liveness", new HealthCheckOptions { Predicate = _ => false });
 app.MapHealthChecks("/health/readiness", new HealthCheckOptions { Predicate = _ => true });
 
-using (var scope = app.Services.CreateScope())
+using (IServiceScope scope = app.Services.CreateScope())
 {
-    var db = scope.ServiceProvider.GetRequiredService<GatewayContext>();
+    GatewayContext db = scope.ServiceProvider.GetRequiredService<GatewayContext>();
     db.Database.Migrate();
 }
 

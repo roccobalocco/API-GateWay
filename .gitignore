@@ -54,3 +54,5 @@ stresstestfe/.angular
 *.backup
 *.info
 ììkubectl
+
+output.log

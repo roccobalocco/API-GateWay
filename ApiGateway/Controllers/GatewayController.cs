@@ -21,12 +21,13 @@ public class GatewayController(
     IHttpClientFactory clientFactory,
     IOptions<MicroServicesOptions> options,
     IOptions<UsersAllowedOptions> usersAllowedOptionsAccessor,
-    MetricsService metrics)
+    MetricsService metrics,
+    Logger logger)
     : ControllerBase
 {
     private readonly MicroServicesOptions _services = options.Value;
     private readonly UsersAllowedOptions _usersAllowedOptions = usersAllowedOptionsAccessor.Value;
-    private readonly Logger _logger = LogManager.GetCurrentClassLogger();
+    private readonly Logger _logger = logger;
     private readonly MetricsService _metrics = metrics;
 
     private HttpClient CreateClientForService(string serviceName) => serviceName switch
