@@ -17,7 +17,7 @@ I chose this stack because I already had some experience with these tools, and I
 
 A system architecture diagram built by the manifest file is provided (thanks to [Philippe Merle](https://github.com/philippemerle/KubeDiagrams)):
 
-![image-20250724103508820](/home/pietro/.config/Typora/typora-user-images/image-20250724103508820.png)
+<img src="/home/pietro/.config/Typora/typora-user-images/image-20250724103508820.png" alt="image-20250724103508820" />
 
 ### Overview of the architecture
 
@@ -70,7 +70,7 @@ Each named HttpClient has its own pool of execution slots and queuing slots, ens
 
 ### Rate Limiting
 
-The system implements a dual-layer approach using *.NET 8*'s built-in rate limiting middleware:
+The system implements a dual-layer approach using *.NET 8*'s built-in rate limiting middleware. Both layers work together and are applied to all controller endpoints, except for health check endpoints, ensuring that the system remains protected from abuse while still allowing critical monitoring to function uninterrupted.
 
 #### Per-IP Policy
 
@@ -92,50 +92,16 @@ PermitLimit = 800/min
 QueueLimit = 225
 ```
 
-Both policies work together and are applied to all controller endpoints:
-
-```csharp
-app.MapControllers()
-    .RequireRateLimiting("PerIpLimiter")
-    .RequireRateLimiting("FixedPolicy");
-```
-
 ### Authentication
 
-The system use *JWT*-based authentication that validates every aspect of incoming tokens:
-
-```csharp
-options.TokenValidationParameters = new TokenValidationParameters
-{
-    ValidateIssuer = true,
-    ValidIssuer = jwtOptions.Issuer,
-    ValidateAudience = true,
-    ValidAudience = jwtOptions.Audience,
-    ValidateLifetime = true,
-    ValidateIssuerSigningKey = true,
-    IssuerSigningKey = new SymmetricSecurityKey(key)
-};
-```
-
-Only the *API Gateway* needs to handle authentication. Microservices trust the gateway to validate requests, assuming all traffic flows through it. Once a request passes the gateway, microservices can rely on its authentication, creating a clean separation of concerns.
+The system use *JWT*-based authentication that validates every aspect of incoming tokens. Only the *API Gateway* needs to handle authentication. Microservices trust the gateway to validate requests, assuming all traffic flows through it. Once a request passes the gateway, microservices can rely on its authentication, creating a clean separation of concerns.
 
 ### [Health Checks](https://learn.microsoft.com/en-us/aspnet/core/host-and-deploy/health-checks?view=aspnetcore-9.0)
 
 *Kubernetes* needs to know when our services are healthy, so it exposes standardized health check endpoints:
 
-- `/health/liveness`: Confirms the application process is running
-- `/health/readiness`: Verifies the app is ready to handle requests
-
-### [CORS](https://developer.mozilla.org/en-US/docs/Web/HTTP/Guides/CORS) Configuration
-
-For local development, I have configured *CORS* through *NGINX* ingress annotations:
-
-```yaml
-nginx.ingress.kubernetes.io/enable-cors: "true"
-nginx.ingress.kubernetes.io/cors-allow-origin: "http://localhost:4200"
-```
-
-This allows our *Angular* frontend running locally on port 4200 to communicate with the *Kubernetes*-hosted backend during development.
+- `/health/liveness`: confirms the application process is running
+- `/health/readiness`: verifies the app is ready to handle requests
 
 ## Kubernetes Configuration
 
